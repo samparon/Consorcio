@@ -190,7 +190,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                                 border: `2px solid ${pago ? '#16a34a' : '#e5e7eb'}`,
                                 background: pago ? '#f0fdf4' : '#f9fafb', color: pago ? '#16a34a' : '#374151',
                               }}>
-                                {pago ? <CheckCircle size={15} /> : <Circle size={15} />} Mês {mes}
+                                {pago ? <CheckCircle size={15} /> : <Circle size={15} />} {mes}/{totalCotasPlano}
                               </button>
                             )
                           })}
