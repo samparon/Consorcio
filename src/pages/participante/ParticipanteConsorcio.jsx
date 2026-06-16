@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth'
 import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { auth, db } from '../../firebase'
 import { useAuth } from '../../context/AuthContext'
-import { LogOut, CheckCircle, Clock, BadgeCheck, ArrowLeft } from 'lucide-react'
+import { LogOut, CheckCircle, Clock, BadgeCheck, ArrowLeft, Copy, Check } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -18,6 +18,7 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
   const [salvando, setSalvando] = useState(false)
   const [msg, setMsg] = useState('')
   const [aba, setAba] = useState('cotas')
+  const [copiado, setCopiado] = useState(false)
 
   useEffect(() => { carregar() }, [user, consorcioId])
 
@@ -206,6 +207,28 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
 
         {/* ABA: Pagamentos */}
         {aba === 'pagamentos' && (
+          <>
+          {/* Card PIX */}
+          <div style={{ background: 'linear-gradient(135deg, #14532d, #16a34a)', borderRadius: 24, padding: '28px 36px', boxShadow: '0 8px 24px rgba(22,163,74,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+            <div>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: 0, fontWeight: 600, letterSpacing: 1 }}>PAGUE VIA PIX</p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: '4px 0 12px', }}>Chave celular — vencimento todo dia 10</p>
+              <p style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, letterSpacing: 1 }}>61996166127</p>
+            </div>
+            <button
+              onClick={() => { navigator.clipboard.writeText('61996166127'); setCopiado(true); setTimeout(() => setCopiado(false), 2500) }}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                background: copiado ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.15)',
+                border: '2px solid rgba(255,255,255,0.4)', borderRadius: 16,
+                padding: '16px 24px', cursor: 'pointer', color: 'white', fontWeight: 800, fontSize: 14,
+                transition: 'all 0.2s', minWidth: 100,
+              }}>
+              {copiado ? <Check size={24} /> : <Copy size={24} />}
+              {copiado ? 'Copiado!' : 'Copiar'}
+            </button>
+          </div>
+
           <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', margin: 0 }}>Meus pagamentos</h2>
@@ -253,6 +276,7 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
               })}
             </div>
           </div>
+          </>
         )}
       </div>
     </div>
