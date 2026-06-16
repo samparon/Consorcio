@@ -74,7 +74,7 @@ export default function Participante() {
   }
 
   const mesesParaExibir = Math.max(totalMeses, Number(cotas) || 0, 12)
-  const jaConfigurou = meusDados?.cotas && meusDados?.mesesEscolhidos?.length > 0
+  const jaConfigurou = !!meusDados?.cotas && meusDados?.mesesEscolhidos?.length > 0
   const potMensal = totalMeses * VALOR_COTA
 
   return (
