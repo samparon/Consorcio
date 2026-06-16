@@ -7,17 +7,19 @@ import { auth, db } from '../../firebase'
 import { LogOut, UserPlus, CheckCircle, Circle, ArrowLeft, Users, DollarSign, Calendar, Trash2 } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const DOMAIN = '@consorcio.app'
+const toEmail = login => login.trim().toLowerCase() + DOMAIN
 
 export default function AdminConsorcio({ consorcioId, onVoltar }) {
   const [consorcio, setConsorcio] = useState(null)
   const [membros, setMembros] = useState([])
   const [aba, setAba] = useState('visao')
   const [nome, setNome] = useState('')
-  const [email, setEmail] = useState('')
+  const [loginNovo, setLoginNovo] = useState('')
   const [senha, setSenha] = useState('')
   const [criando, setCriando] = useState(false)
   const [msg, setMsg] = useState('')
-  const [emailExistente, setEmailExistente] = useState('')
+  const [loginExistente, setLoginExistente] = useState('')
   const [adicionando, setAdicionando] = useState(false)
   const [msgExistente, setMsgExistente] = useState('')
   const [removendo, setRemovendo] = useState(null)
@@ -52,15 +54,16 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
     setMsg('')
     setCriando(true)
     try {
+      const fakeEmail = toEmail(loginNovo)
       const app2 = initializeApp(auth.app.options, 'sec-' + Date.now())
       const auth2 = getAuth(app2)
-      const cred = await createUserWithEmailAndPassword(auth2, email, senha)
+      const cred = await createUserWithEmailAndPassword(auth2, fakeEmail, senha)
       const uid = cred.user.uid
 
       const uSnap = await getDoc(doc(db, 'usuarios', uid))
       if (!uSnap.exists()) {
         await setDoc(doc(db, 'usuarios', uid), {
-          nome, email, role: 'participante', criadoEm: Date.now(), consorcios: [consorcioId],
+          nome, login: loginNovo.trim().toLowerCase(), role: 'participante', criadoEm: Date.now(), consorcios: [consorcioId],
         })
       } else {
         await updateDoc(doc(db, 'usuarios', uid), { consorcios: arrayUnion(consorcioId) })
@@ -72,11 +75,11 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
 
       await auth2.signOut()
       setMsg('✅ Participante adicionado!')
-      setNome(''); setEmail(''); setSenha(''); setCotasNovo('1')
+      setNome(''); setLoginNovo(''); setSenha(''); setCotasNovo('1')
       await carregar()
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') {
-        setMsg('❌ E-mail já existe. Use "Adicionar existente" para adicioná-lo a este consórcio.')
+        setMsg('❌ Login já existe. Use "Adicionar existente" para adicioná-lo a este consórcio.')
       } else {
         setMsg('❌ ' + err.message)
       }
@@ -90,11 +93,12 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
     setMsgExistente('')
     setAdicionando(true)
     try {
+      const loginBusca = loginExistente.trim().toLowerCase()
       const snap = await getDocs(collection(db, 'usuarios'))
       let encontrado = null
-      snap.forEach(d => { if (d.data().email === emailExistente) encontrado = { id: d.id, ...d.data() } })
+      snap.forEach(d => { if (d.data().login === loginBusca) encontrado = { id: d.id, ...d.data() } })
 
-      if (!encontrado) { setMsgExistente('❌ Nenhum usuário encontrado com esse e-mail.'); return }
+      if (!encontrado) { setMsgExistente('❌ Nenhum usuário encontrado com esse login.'); return }
 
       const jaEMembro = membros.find(m => m.id === encontrado.id)
       if (jaEMembro) { setMsgExistente('❌ Esse usuário já está neste consórcio.'); return }
@@ -104,7 +108,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
         cotas: Number(cotasExistente), mesesEscolhidos: [], pagamentos: [], pagamentosMensais: [], entradaEm: Date.now(),
       })
       setMsgExistente(`✅ ${encontrado.nome} adicionado com sucesso!`)
-      setEmailExistente(''); setCotasExistente('1')
+      setLoginExistente(''); setCotasExistente('1')
       await carregar()
     } catch (err) {
       setMsgExistente('❌ Erro: ' + err.message)
@@ -236,7 +240,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                       <div style={{ width: 42, height: 42, borderRadius: '50%', background: dono ? '#eff6ff' : '#f9fafb', color: dono ? '#1d4ed8' : '#d1d5db', fontWeight: 800, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{mes}</div>
                       <div>
                         <p style={{ fontSize: 17, fontWeight: 700, color: dono ? '#111827' : '#9ca3af', margin: 0 }}>{dono ? dono.perfil?.nome : 'Disponível'}</p>
-                        {dono && <p style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{dono.perfil?.email}</p>}
+                        {dono && <p style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>@{dono.perfil?.login}</p>}
                       </div>
                     </div>
                     <span style={{ fontSize: 18, fontWeight: 800, color: dono ? '#16a34a' : '#d1d5db' }}>{fmt(potMensal)}</span>
@@ -258,7 +262,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                       <div>
                         <p style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>{idx + 1}º — {m.perfil?.nome}</p>
-                        <p style={{ fontSize: 14, color: '#6b7280', marginTop: 2 }}>{m.perfil?.email}</p>
+                        <p style={{ fontSize: 14, color: '#6b7280', marginTop: 2 }}>@{m.perfil?.login}</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                         <div style={{ textAlign: 'right' }}>
@@ -407,7 +411,8 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
               <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', marginBottom: 6 }}>Adicionar usuário existente</h3>
               <p style={{ fontSize: 14, color: '#3b82f6', marginBottom: 20 }}>Usuário que já tem conta no sistema — informe o e-mail dele.</p>
               <form onSubmit={adicionarExistente} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <input type="email" value={emailExistente} onChange={e => setEmailExistente(e.target.value)} required placeholder="email@existente.com"
+                <input type="text" value={loginExistente} onChange={e => setLoginExistente(e.target.value)} required placeholder="login do participante"
+                  autoCapitalize="none"
                   style={{ width: '100%', border: '2px solid #bfdbfe', borderRadius: 12, padding: '12px 16px', fontSize: 15, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
                 <div>
                   <label style={{ fontSize: 14, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>Nº de cotas</label>
@@ -431,12 +436,12 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
             <form onSubmit={criarUsuario} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {[
                 { label: 'Nome completo', value: nome, set: setNome, type: 'text', ph: 'João Silva' },
-                { label: 'E-mail', value: email, set: setEmail, type: 'email', ph: 'joao@email.com' },
+                { label: 'Login', value: loginNovo, set: setLoginNovo, type: 'text', ph: 'Ex: mario (sem espaço)', cap: 'none' },
                 { label: 'Senha', value: senha, set: setSenha, type: 'password', ph: 'Mínimo 6 caracteres' },
-              ].map(({ label, value, set, type, ph }) => (
+              ].map(({ label, value, set, type, ph, cap }) => (
                 <div key={label}>
                   <label style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 8 }}>{label}</label>
-                  <input type={type} value={value} onChange={e => set(e.target.value)} required placeholder={ph} minLength={type === 'password' ? 6 : undefined}
+                  <input type={type} value={value} onChange={e => set(e.target.value)} required placeholder={ph} minLength={type === 'password' ? 6 : undefined} autoCapitalize={cap}
                     style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '12px 16px', fontSize: 15, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
                 </div>
               ))}

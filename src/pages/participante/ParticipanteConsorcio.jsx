@@ -64,7 +64,7 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
       setMsgSenha('✅ Senha alterada com sucesso!')
       setSenhaAtual(''); setSenhaNova(''); setSenhaConfirm('')
     } catch (err) {
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-login-credentials') {
         setMsgSenha('❌ Senha atual incorreta.')
       } else {
         setMsgSenha('❌ Erro: ' + err.message)
