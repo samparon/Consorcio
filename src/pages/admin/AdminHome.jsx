@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { signOut } from 'firebase/auth'
 import { collection, getDocs, addDoc, doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../../firebase'
-import { LogOut, PlusCircle, Users, DollarSign, ChevronRight } from 'lucide-react'
+import { LogOut, PlusCircle, ChevronRight, Download } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 export default function AdminHome({ onEntrar }) {
   const [consorcios, setConsorcios] = useState([])
   const [criando, setCriando] = useState(false)
+  const [exportando, setExportando] = useState(false)
   const [nome, setNome] = useState('')
   const [totalCotas, setTotalCotas] = useState('12')
   const [valorCota, setValorCota] = useState('100')
@@ -26,6 +27,38 @@ export default function AdminHome({ onEntrar }) {
     }
     lista.sort((a, b) => (b.criadoEm || 0) - (a.criadoEm || 0))
     setConsorcios(lista)
+  }
+
+  async function exportarBackup() {
+    setExportando(true)
+    try {
+      const backup = { exportadoEm: new Date().toISOString(), consorcios: [], usuarios: [] }
+
+      // Exporta consórcios e membros
+      const cSnap = await getDocs(collection(db, 'consorcios'))
+      for (const c of cSnap.docs) {
+        const membrosSnap = await getDocs(collection(db, 'consorcios', c.id, 'membros'))
+        const membros = membrosSnap.docs.map(m => ({ id: m.id, ...m.data() }))
+        backup.consorcios.push({ id: c.id, ...c.data(), membros })
+      }
+
+      // Exporta usuários
+      const uSnap = await getDocs(collection(db, 'usuarios'))
+      uSnap.forEach(u => backup.usuarios.push({ id: u.id, ...u.data() }))
+
+      // Faz download do JSON
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `backup-consorcio-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      alert('Erro ao exportar: ' + err.message)
+    } finally {
+      setExportando(false)
+    }
   }
 
   async function criarConsorcio(e) {
@@ -58,9 +91,14 @@ export default function AdminHome({ onEntrar }) {
           <span style={{ fontSize: 22, fontWeight: 800, color: 'white' }}>Consórcio</span>
           <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', fontSize: 13, fontWeight: 700, padding: '3px 12px', borderRadius: 20 }}>Admin</span>
         </div>
-        <button onClick={() => signOut(auth)} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15 }}>
-          <LogOut size={18} /> Sair
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={exportarBackup} disabled={exportando} title="Exportar backup" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.85)', background: 'rgba(255,255,255,0.15)', border: '1.5px solid rgba(255,255,255,0.3)', borderRadius: 10, padding: '8px 14px', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
+            <Download size={16} /> {exportando ? 'Exportando...' : 'Backup'}
+          </button>
+          <button onClick={() => signOut(auth)} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.8)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15 }}>
+            <LogOut size={18} /> Sair
+          </button>
+        </div>
       </nav>
 
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 24px' }}>
