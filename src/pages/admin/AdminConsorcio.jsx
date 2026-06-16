@@ -22,9 +22,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
   const [msgExistente, setMsgExistente] = useState('')
   const [removendo, setRemovendo] = useState(null)
   const [cotasNovo, setCotasNovo] = useState('1')
-  const [mesesNovo, setMesesNovo] = useState([])
   const [cotasExistente, setCotasExistente] = useState('1')
-  const [mesesExistente, setMesesExistente] = useState([])
   const [sorteando, setSorteando] = useState(false)
   const [resultadoSorteio, setResultadoSorteio] = useState(null)
 
@@ -52,7 +50,6 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
   async function criarUsuario(e) {
     e.preventDefault()
     setMsg('')
-    if (mesesNovo.length !== Number(cotasNovo)) { setMsg(`❌ Selecione exatamente ${cotasNovo} mês(es) sorteado(s).`); return }
     setCriando(true)
     try {
       const app2 = initializeApp(auth.app.options, 'sec-' + Date.now())
@@ -70,12 +67,12 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
       }
 
       await setDoc(doc(db, 'consorcios', consorcioId, 'membros', uid), {
-        cotas: Number(cotasNovo), mesesEscolhidos: mesesNovo, pagamentos: [], pagamentosMensais: [], entradaEm: Date.now(),
+        cotas: Number(cotasNovo), mesesEscolhidos: [], pagamentos: [], pagamentosMensais: [], entradaEm: Date.now(),
       })
 
       await auth2.signOut()
       setMsg('✅ Participante adicionado!')
-      setNome(''); setEmail(''); setSenha(''); setCotasNovo('1'); setMesesNovo([])
+      setNome(''); setEmail(''); setSenha(''); setCotasNovo('1')
       await carregar()
     } catch (err) {
       if (err.code === 'auth/email-already-in-use') {
@@ -102,14 +99,12 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
       const jaEMembro = membros.find(m => m.id === encontrado.id)
       if (jaEMembro) { setMsgExistente('❌ Esse usuário já está neste consórcio.'); return }
 
-      if (mesesExistente.length !== Number(cotasExistente)) { setMsgExistente(`❌ Selecione exatamente ${cotasExistente} mês(es) sorteado(s).`); return }
-
       await updateDoc(doc(db, 'usuarios', encontrado.id), { consorcios: arrayUnion(consorcioId) })
       await setDoc(doc(db, 'consorcios', consorcioId, 'membros', encontrado.id), {
-        cotas: Number(cotasExistente), mesesEscolhidos: mesesExistente, pagamentos: [], pagamentosMensais: [], entradaEm: Date.now(),
+        cotas: Number(cotasExistente), mesesEscolhidos: [], pagamentos: [], pagamentosMensais: [], entradaEm: Date.now(),
       })
       setMsgExistente(`✅ ${encontrado.nome} adicionado com sucesso!`)
-      setEmailExistente(''); setCotasExistente('1'); setMesesExistente([])
+      setEmailExistente(''); setCotasExistente('1')
       await carregar()
     } catch (err) {
       setMsgExistente('❌ Erro: ' + err.message)
@@ -416,28 +411,9 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                   style={{ width: '100%', border: '2px solid #bfdbfe', borderRadius: 12, padding: '12px 16px', fontSize: 15, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
                 <div>
                   <label style={{ fontSize: 14, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>Nº de cotas</label>
-                  <input type="number" min="1" value={cotasExistente} onChange={e => { setCotasExistente(e.target.value); setMesesExistente([]) }}
+                  <input type="number" min="1" value={cotasExistente} onChange={e => setCotasExistente(e.target.value)}
                     style={{ width: 100, border: '2px solid #bfdbfe', borderRadius: 10, padding: '10px 14px', fontSize: 15, outline: 'none', color: '#111827' }} />
                 </div>
-                {Number(cotasExistente) > 0 && (
-                  <div>
-                    <label style={{ fontSize: 14, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 8 }}>
-                      Meses sorteados ({mesesExistente.length}/{cotasExistente})
-                    </label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {Array.from({ length: totalCotasPlano }, (_, i) => i + 1).map(mes => {
-                        const sel = mesesExistente.includes(mes)
-                        const ocupado = membros.some(m => m.mesesEscolhidos?.includes(mes))
-                        return (
-                          <button key={mes} type="button" disabled={ocupado} onClick={() => toggleMes(mes, mesesExistente, setMesesExistente, cotasExistente)}
-                            style={{ width: 40, height: 40, borderRadius: 10, fontSize: 14, fontWeight: 800, cursor: ocupado ? 'not-allowed' : 'pointer', border: `2px solid ${ocupado ? '#f3f4f6' : sel ? '#1d4ed8' : '#bfdbfe'}`, background: ocupado ? '#f9fafb' : sel ? '#1d4ed8' : 'white', color: ocupado ? '#d1d5db' : sel ? 'white' : '#1d4ed8' }}>
-                            {mes}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
                 {msgExistente && <p style={{ fontSize: 14, color: msgExistente.includes('✅') ? '#16a34a' : '#dc2626' }}>{msgExistente}</p>}
                 <button type="submit" disabled={adicionando} style={{
                   background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 12,
@@ -466,28 +442,9 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
               ))}
               <div>
                 <label style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Nº de cotas</label>
-                <input type="number" min="1" value={cotasNovo} onChange={e => { setCotasNovo(e.target.value); setMesesNovo([]) }}
+                <input type="number" min="1" value={cotasNovo} onChange={e => setCotasNovo(e.target.value)}
                   style={{ width: 100, border: '2px solid #e5e7eb', borderRadius: 12, padding: '12px 16px', fontSize: 15, outline: 'none', color: '#111827' }} />
               </div>
-              {Number(cotasNovo) > 0 && (
-                <div>
-                  <label style={{ fontSize: 15, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 10 }}>
-                    Meses sorteados ({mesesNovo.length}/{cotasNovo})
-                  </label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {Array.from({ length: totalCotasPlano }, (_, i) => i + 1).map(mes => {
-                      const sel = mesesNovo.includes(mes)
-                      const ocupado = membros.some(m => m.mesesEscolhidos?.includes(mes))
-                      return (
-                        <button key={mes} type="button" disabled={ocupado} onClick={() => toggleMes(mes, mesesNovo, setMesesNovo, cotasNovo)}
-                          style={{ width: 42, height: 42, borderRadius: 10, fontSize: 14, fontWeight: 800, cursor: ocupado ? 'not-allowed' : 'pointer', border: `2px solid ${ocupado ? '#f3f4f6' : sel ? '#1d4ed8' : '#e5e7eb'}`, background: ocupado ? '#f9fafb' : sel ? '#1d4ed8' : 'white', color: ocupado ? '#d1d5db' : sel ? 'white' : '#374151' }}>
-                          {mes}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
               {msg && <p style={{ fontSize: 15, color: msg.includes('✅') ? '#16a34a' : '#dc2626' }}>{msg}</p>}
               <button type="submit" disabled={criando} style={{
                 background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', color: 'white',
