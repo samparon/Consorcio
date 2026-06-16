@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 import { doc, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 
@@ -16,12 +16,21 @@ export default function Setup() {
     setMsg('')
     try {
       const emailFinal = toEmail(login)
-      const cred = await createUserWithEmailAndPassword(auth, emailFinal, senha)
-      await setDoc(doc(db, 'usuarios', cred.user.uid), {
+      let uid
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, emailFinal, senha)
+        uid = cred.user.uid
+      } catch (err) {
+        if (err.code === 'auth/email-already-in-use') {
+          const cred = await signInWithEmailAndPassword(auth, emailFinal, senha)
+          uid = cred.user.uid
+        } else throw err
+      }
+      await setDoc(doc(db, 'usuarios', uid), {
         nome: login.trim(), login: login.trim(), role: 'admin', criadoEm: Date.now(),
       })
       setFeito(true)
-      setMsg(`✅ Admin criado! Use "${login.trim()}" para entrar.`)
+      setMsg(`✅ Admin configurado! Use "${login.trim()}" para entrar.`)
     } catch (err) {
       setMsg('❌ Erro: ' + err.message)
     }
