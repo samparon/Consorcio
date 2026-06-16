@@ -138,7 +138,7 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
                 {[
                   { label: 'Cotas', value: membro.cotas },
                   { label: 'Pagamento mensal', value: fmt(membro.cotas * valorCota), color: '#1d4ed8' },
-                  { label: 'Meses sorteados para receber', value: membro.mesesEscolhidos?.sort((a,b)=>a-b).join(', '), color: '#16a34a' },
+                  { label: 'Meses para receber', value: membro.mesesEscolhidos?.sort((a,b)=>a-b).join(', '), color: '#16a34a' },
                 ].map(({ label, value, color }) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: 18 }}>
                     <span style={{ fontSize: 17, color: '#6b7280' }}>{label}</span>
