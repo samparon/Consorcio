@@ -3,7 +3,7 @@ import { signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvide
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from '../../firebase'
 import { useAuth } from '../../context/AuthContext'
-import { LogOut, CheckCircle, Clock, BadgeCheck, ArrowLeft, Copy, Check, User, Key } from 'lucide-react'
+import { LogOut, CheckCircle, Clock, ArrowLeft, Copy, Check, User, Key } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -79,13 +79,6 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
     } finally {
       setSalvandoSenha(false)
     }
-  }
-
-  async function marcarPagamentoMensal(mes) {
-    const pagamentosMensais = membro?.pagamentosMensais || []
-    const novos = pagamentosMensais.includes(mes) ? pagamentosMensais.filter(m => m !== mes) : [...pagamentosMensais, mes]
-    await updateDoc(doc(db, 'consorcios', consorcioId, 'membros', user.uid), { pagamentosMensais: novos })
-    await carregar()
   }
 
   if (!consorcio) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando...</div>
@@ -215,7 +208,7 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
                     border: `2px solid ${pago ? '#bbf7d0' : '#e5e7eb'}`,
                     background: pago ? '#f0fdf4' : 'white', borderRadius: 16, padding: '16px',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: pago ? 0 : 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{ width: 40, height: 40, borderRadius: '50%', background: pago ? '#dcfce7' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           {pago ? <CheckCircle size={20} color="#16a34a" /> : <Clock size={20} color="#1d4ed8" />}
@@ -225,24 +218,10 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
                           <p style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>Vencimento: dia 10 · {fmt(valorMensal)}</p>
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: 16, fontWeight: 800, color: pago ? '#16a34a' : '#374151' }}>
-                          {pago ? '✅ Pago' : fmt(valorMensal)}
-                        </span>
-                        {pago && (
-                          <p style={{ margin: 0 }}>
-                            <button onClick={() => marcarPagamentoMensal(mes)} style={{ fontSize: 12, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>desfazer</button>
-                          </p>
-                        )}
-                      </div>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: pago ? '#16a34a' : '#374151' }}>
+                        {pago ? '✅ Pago' : fmt(valorMensal)}
+                      </span>
                     </div>
-                    {!pago && (
-                      <button onClick={() => marcarPagamentoMensal(mes)} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%',
-                        background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: 'white',
-                        border: 'none', borderRadius: 12, padding: '12px', fontSize: 15, fontWeight: 800, cursor: 'pointer',
-                      }}><BadgeCheck size={18} /> Marcar pago</button>
-                    )}
                   </div>
                 )
               })}

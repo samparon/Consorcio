@@ -201,6 +201,15 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
     await carregar()
   }
 
+  async function marcarPagamentoMensal(uid, mes) {
+    const m = membros.find(x => x.id === uid)
+    if (!m) return
+    const pagamentosMensais = m.pagamentosMensais || []
+    const novos = pagamentosMensais.includes(mes) ? pagamentosMensais.filter(x => x !== mes) : [...pagamentosMensais, mes]
+    await updateDoc(doc(db, 'consorcios', consorcioId, 'membros', uid), { pagamentosMensais: novos })
+    await carregar()
+  }
+
   if (!consorcio) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando...</div>
 
   const totalCotasPlano = consorcio.totalCotasPlano || 12
@@ -328,23 +337,47 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                       </div>
                     )}
                     {m.cotas > 0 ? (
-                      <div>
-                        <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 10 }}>Marcar recebimento do consórcio:</p>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                          {m.mesesEscolhidos?.sort((a, b) => a - b).map(mes => {
-                            const pago = m.pagamentos?.includes(mes)
-                            return (
-                              <button key={mes} onClick={() => marcarPagamento(m.id, mes)} style={{
-                                display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 10,
-                                fontSize: 14, fontWeight: 700, cursor: 'pointer',
-                                border: `2px solid ${pago ? '#16a34a' : '#e5e7eb'}`,
-                                background: pago ? '#f0fdf4' : '#f9fafb', color: pago ? '#16a34a' : '#374151',
-                              }}>
-                                {pago ? <CheckCircle size={15} /> : <Circle size={15} />} {calcData(mes)}
-                              </button>
-                            )
-                          })}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        {/* Pagamentos mensais de cota */}
+                        <div>
+                          <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 10, fontWeight: 600 }}>Pagamentos mensais de cota:</p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                            {Array.from({ length: totalCotasPlano }, (_, i) => i + 1).map(mes => {
+                              const pago = m.pagamentosMensais?.includes(mes)
+                              return (
+                                <button key={mes} onClick={() => marcarPagamentoMensal(m.id, mes)} style={{
+                                  display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 10,
+                                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                                  border: `2px solid ${pago ? '#16a34a' : '#e5e7eb'}`,
+                                  background: pago ? '#f0fdf4' : '#f9fafb', color: pago ? '#16a34a' : '#9ca3af',
+                                }}>
+                                  {pago ? <CheckCircle size={13} /> : <Circle size={13} />} {calcData(mes)}
+                                </button>
+                              )
+                            })}
+                          </div>
                         </div>
+                        {/* Recebimento do pot */}
+                        {m.mesesEscolhidos?.length > 0 && (
+                          <div>
+                            <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 10, fontWeight: 600 }}>Marcar recebimento do consórcio:</p>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                              {m.mesesEscolhidos?.sort((a, b) => a - b).map(mes => {
+                                const pago = m.pagamentos?.includes(mes)
+                                return (
+                                  <button key={mes} onClick={() => marcarPagamento(m.id, mes)} style={{
+                                    display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', borderRadius: 10,
+                                    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                                    border: `2px solid ${pago ? '#16a34a' : '#e5e7eb'}`,
+                                    background: pago ? '#f0fdf4' : '#f9fafb', color: pago ? '#16a34a' : '#374151',
+                                  }}>
+                                    {pago ? <CheckCircle size={15} /> : <Circle size={15} />} {calcData(mes)}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <p style={{ fontSize: 14, color: '#d97706', background: '#fffbeb', padding: '8px 14px', borderRadius: 8 }}>Ainda não configurou as cotas.</p>
