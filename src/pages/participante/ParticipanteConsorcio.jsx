@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { signOut } from 'firebase/auth'
+import { signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from '../../firebase'
 import { useAuth } from '../../context/AuthContext'
@@ -16,6 +16,11 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
   const [chavePix, setChavePix] = useState('')
   const [salvandoPix, setSalvandoPix] = useState(false)
   const [msgPix, setMsgPix] = useState('')
+  const [senhaAtual, setSenhaAtual] = useState('')
+  const [senhaNova, setSenhaNova] = useState('')
+  const [senhaConfirm, setSenhaConfirm] = useState('')
+  const [salvandoSenha, setSalvandoSenha] = useState(false)
+  const [msgSenha, setMsgSenha] = useState('')
 
   useEffect(() => { carregar() }, [user, consorcioId])
 
@@ -43,6 +48,29 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
       setMsgPix('❌ Erro ao salvar.')
     } finally {
       setSalvandoPix(false)
+    }
+  }
+
+  async function alterarSenha(e) {
+    e.preventDefault()
+    setMsgSenha('')
+    if (senhaNova !== senhaConfirm) { setMsgSenha('❌ As senhas novas não coincidem.'); return }
+    if (senhaNova.length < 6) { setMsgSenha('❌ A nova senha precisa ter pelo menos 6 caracteres.'); return }
+    setSalvandoSenha(true)
+    try {
+      const credencial = EmailAuthProvider.credential(user.email, senhaAtual)
+      await reauthenticateWithCredential(auth.currentUser, credencial)
+      await updatePassword(auth.currentUser, senhaNova)
+      setMsgSenha('✅ Senha alterada com sucesso!')
+      setSenhaAtual(''); setSenhaNova(''); setSenhaConfirm('')
+    } catch (err) {
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setMsgSenha('❌ Senha atual incorreta.')
+      } else {
+        setMsgSenha('❌ Erro: ' + err.message)
+      }
+    } finally {
+      setSalvandoSenha(false)
     }
   }
 
@@ -251,6 +279,38 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
                 {salvandoPix ? 'Salvando...' : 'Salvar chave PIX'}
               </button>
             </form>
+
+            <div style={{ borderTop: '2px solid #f3f4f6', marginTop: 32, paddingTop: 32 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                🔒 Alterar senha
+              </h3>
+              <form onSubmit={alterarSenha} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {[
+                  { label: 'Senha atual', value: senhaAtual, set: setSenhaAtual },
+                  { label: 'Nova senha', value: senhaNova, set: setSenhaNova },
+                  { label: 'Confirmar nova senha', value: senhaConfirm, set: setSenhaConfirm },
+                ].map(({ label, value, set }) => (
+                  <div key={label}>
+                    <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 8 }}>{label}</label>
+                    <input
+                      type="password"
+                      value={value}
+                      onChange={e => set(e.target.value)}
+                      required
+                      minLength={label === 'Senha atual' ? 1 : 6}
+                      style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '13px 16px', fontSize: 15, outline: 'none', color: '#111827', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                ))}
+                {msgSenha && <p style={{ fontSize: 15, color: msgSenha.includes('✅') ? '#16a34a' : '#dc2626', margin: 0 }}>{msgSenha}</p>}
+                <button type="submit" disabled={salvandoSenha} style={{
+                  background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', color: 'white',
+                  border: 'none', borderRadius: 12, padding: '13px', fontSize: 15, fontWeight: 800, cursor: 'pointer', opacity: salvandoSenha ? 0.6 : 1,
+                }}>
+                  {salvandoSenha ? 'Alterando...' : 'Alterar senha'}
+                </button>
+              </form>
+            </div>
           </div>
         )}
 
