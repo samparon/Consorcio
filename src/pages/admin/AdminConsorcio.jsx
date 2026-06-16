@@ -389,20 +389,29 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
               </button>
             </div>
 
-            {/* Resultado do sorteio */}
-            {resultadoSorteio && (
+            {/* Lista de contemplados — sempre visível se houver meses atribuídos */}
+            {membros.some(m => m.mesesEscolhidos?.length > 0) && (
               <div style={{ background: 'white', borderRadius: 24, padding: '32px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 20 }}>🎉 Resultado do Sorteio</h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {resultadoSorteio.map((r, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 14 }}>
-                      <div>
-                        <p style={{ fontSize: 17, fontWeight: 800, color: '#111827', margin: 0 }}>{r.nome}</p>
-                        <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>{r.cotas} cota{r.cotas !== 1 ? 's' : ''}</p>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 20 }}>📋 Lista de contemplados</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {membros
+                    .filter(m => m.mesesEscolhidos?.length > 0)
+                    .flatMap(m => m.mesesEscolhidos.map(mes => ({ nome: m.perfil?.nome, mes })))
+                    .sort((a, b) => a.mes - b.mes)
+                    .map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 14 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: 'white', fontWeight: 900, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {item.mes}
+                          </div>
+                          <p style={{ fontSize: 17, fontWeight: 800, color: '#111827', margin: 0 }}>{item.nome}</p>
+                        </div>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '6px 14px', borderRadius: 10 }}>
+                          recebe dia 15 do mês {item.mes}
+                        </span>
                       </div>
-                      <span style={{ fontSize: 16, fontWeight: 800, color: '#16a34a' }}>Mês{r.meses.length > 1 ? 'es' : ''}: {r.meses.join(', ')}</span>
-                    </div>
-                  ))}
+                    ))
+                  }
                 </div>
               </div>
             )}
