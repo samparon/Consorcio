@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from './context/AuthContext'
+import Setup from './pages/Setup'
 import Login from './pages/Login'
 import AdminHome from './pages/admin/AdminHome'
 import AdminConsorcio from './pages/admin/AdminConsorcio'
@@ -16,6 +17,8 @@ function Router() {
 
   NavContext.setView = setView
   NavContext.setConsorcioId = setConsorcioId
+
+  if (window.location.hash === '#/setup') return <Setup />
 
   if (loading) {
     return (
