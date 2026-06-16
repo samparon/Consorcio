@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { signOut } from 'firebase/auth'
-import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, collection, getDocs, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { LogOut, CheckCircle, Clock, BadgeCheck } from 'lucide-react'
@@ -13,6 +13,7 @@ export default function Participante() {
   const [meusDados, setMeusDados] = useState(null)
   const [mesesOcupados, setMesesOcupados] = useState([])
   const [totalMeses, setTotalMeses] = useState(0)
+  const [cotasPlano, setCotasPlano] = useState(12)
   const [cotas, setCotas] = useState('')
   const [mesesSelecionados, setMesesSelecionados] = useState([])
   const [fase, setFase] = useState('ver')
@@ -32,15 +33,17 @@ export default function Participante() {
 
     const todosSnap = await getDocs(collection(db, 'usuarios'))
     let ocupados = []
-    let totalCotas = 0
     todosSnap.forEach(d => {
       const u = d.data()
       if (u.mesesEscolhidos) ocupados.push(...u.mesesEscolhidos)
-      if (u.cotas) totalCotas += Number(u.cotas)
     })
     if (dados.mesesEscolhidos) ocupados = ocupados.filter(m => !dados.mesesEscolhidos.includes(m))
     setMesesOcupados(ocupados)
-    setTotalMeses(totalCotas)
+
+    const configSnap = await getDoc(doc(db, 'config', 'geral'))
+    const plano = configSnap.exists() ? (configSnap.data().totalCotasPlano || 12) : 12
+    setCotasPlano(plano)
+    setTotalMeses(plano)
   }
 
   function toggleMes(mes) {
@@ -82,7 +85,7 @@ export default function Participante() {
     await carregar()
   }
 
-  const mesesParaExibir = Math.max(totalMeses, Number(cotas) || 0, 12)
+  const mesesParaExibir = cotasPlano
   const jaConfigurou = !!meusDados?.cotas && meusDados?.mesesEscolhidos?.length > 0
   const potMensal = totalMeses * VALOR_COTA
   const pagamentosMensais = meusDados?.pagamentosMensais || []
@@ -147,7 +150,7 @@ export default function Participante() {
                       <span style={{ fontSize: 20, fontWeight: 800, color: color || '#111827' }}>{value}</span>
                     </div>
                   ))}
-                  <button onClick={() => { setFase('escolher'); setMsg('') }}
+                  <button onClick={() => { setFase('escolher'); setMesesSelecionados([]); setMsg('') }}
                     style={{ alignSelf: 'flex-start', fontSize: 16, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, marginTop: 8 }}>
                     ✏️ Alterar escolha
                   </button>

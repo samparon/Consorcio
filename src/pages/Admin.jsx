@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { signOut } from 'firebase/auth'
 import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth'
-import { doc, setDoc, collection, getDocs, updateDoc } from 'firebase/firestore'
+import { doc, setDoc, collection, getDocs, updateDoc, getDoc } from 'firebase/firestore'
 import { initializeApp } from 'firebase/app'
 import { auth, db } from '../firebase'
 import { LogOut, UserPlus, CheckCircle, Circle, Users, DollarSign, Calendar, PlusCircle } from 'lucide-react'
@@ -17,6 +17,10 @@ export default function Admin() {
   const [senha, setSenha] = useState('')
   const [criando, setCriando] = useState(false)
   const [msg, setMsg] = useState('')
+  const [cotasPlano, setCotasPlano] = useState(12)
+  const [cotasPlanoInput, setCotasPlanoInput] = useState('12')
+  const [salvandoConfig, setSalvandoConfig] = useState(false)
+  const [msgConfig, setMsgConfig] = useState('')
 
   useEffect(() => { carregar() }, [])
 
@@ -26,6 +30,27 @@ export default function Admin() {
     snap.forEach(d => lista.push({ id: d.id, ...d.data() }))
     lista.sort((a, b) => (a.criadoEm || 0) - (b.criadoEm || 0))
     setParticipantes(lista)
+
+    const configSnap = await getDoc(doc(db, 'config', 'geral'))
+    if (configSnap.exists()) {
+      const total = configSnap.data().totalCotasPlano || 12
+      setCotasPlano(total)
+      setCotasPlanoInput(String(total))
+    }
+  }
+
+  async function salvarConfig(e) {
+    e.preventDefault()
+    setSalvandoConfig(true)
+    try {
+      await setDoc(doc(db, 'config', 'geral'), { totalCotasPlano: Number(cotasPlanoInput) })
+      setCotasPlano(Number(cotasPlanoInput))
+      setMsgConfig('✅ Configuração salva!')
+    } catch {
+      setMsgConfig('❌ Erro ao salvar.')
+    } finally {
+      setSalvandoConfig(false)
+    }
   }
 
   async function criarUsuario(e) {
@@ -61,9 +86,9 @@ export default function Admin() {
   }
 
   const membros = participantes.filter(p => p.role !== 'admin')
-  const totalCotas = membros.reduce((acc, p) => acc + (Number(p.cotas) || 0), 0)
-  const potMensal = totalCotas * VALOR_COTA
-  const totalMeses = totalCotas
+  const totalCotasRegistradas = membros.reduce((acc, p) => acc + (Number(p.cotas) || 0), 0)
+  const totalMeses = cotasPlano
+  const potMensal = cotasPlano * VALOR_COTA
 
   return (
     <div className="min-h-screen" style={{ background: '#f0f4f8' }}>
@@ -86,7 +111,7 @@ export default function Admin() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
           {[
             { icon: <Users size={28} />, label: 'Participantes', value: membros.length, color: '#1d4ed8', bg: '#eff6ff' },
-            { icon: <DollarSign size={28} />, label: 'Total de cotas', value: totalCotas, color: '#7c3aed', bg: '#f5f3ff' },
+            { icon: <DollarSign size={28} />, label: `Cotas (${totalCotasRegistradas}/${cotasPlano})`, value: `${totalCotasRegistradas}/${cotasPlano}`, color: '#7c3aed', bg: '#f5f3ff' },
             { icon: <Calendar size={28} />, label: 'Pot mensal', value: fmt(potMensal), color: 'white', bg: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', white: true },
           ].map(({ icon, label, value, color, bg, white }) => (
             <div key={label} style={{ background: bg, borderRadius: 16, padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -101,7 +126,7 @@ export default function Admin() {
 
         {/* Abas */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {[['visao', 'Visão geral'], ['usuarios', 'Participantes'], ['novo', 'Novo usuário']].map(([id, label]) => (
+          {[['visao', 'Visão geral'], ['usuarios', 'Participantes'], ['novo', 'Novo usuário'], ['config', 'Configurações']].map(([id, label]) => (
             <button key={id} onClick={() => setAba(id)} style={{
               padding: '10px 22px', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: 'none',
               background: aba === id ? '#1d4ed8' : 'white',
@@ -110,6 +135,31 @@ export default function Admin() {
             }}>{label}</button>
           ))}
         </div>
+
+        {/* Configurações */}
+        {aba === 'config' && (
+          <div style={{ background: 'white', borderRadius: 20, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.08)', maxWidth: 480 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 8 }}>Configurações do consórcio</h2>
+            <p style={{ fontSize: 15, color: '#6b7280', marginBottom: 28 }}>Define o total de cotas planejadas. O pot mensal = total de cotas × R$ {VALOR_COTA}.</p>
+            <form onSubmit={salvarConfig} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 16, fontWeight: 700, color: '#374151', marginBottom: 10 }}>Total de cotas no plano</label>
+                <input type="number" min="1" value={cotasPlanoInput} onChange={e => setCotasPlanoInput(e.target.value)} required
+                  style={{ border: '2px solid #e5e7eb', borderRadius: 12, padding: '14px 18px', fontSize: 18, width: 160, outline: 'none', color: '#111827' }} />
+                <p style={{ fontSize: 14, color: '#6b7280', marginTop: 8 }}>
+                  Pot mensal: <strong style={{ color: '#1d4ed8' }}>{fmt(Number(cotasPlanoInput || 0) * VALOR_COTA)}</strong>
+                </p>
+              </div>
+              {msgConfig && <p style={{ fontSize: 15, color: msgConfig.includes('✅') ? '#16a34a' : '#dc2626' }}>{msgConfig}</p>}
+              <button type="submit" disabled={salvandoConfig} style={{
+                background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', color: 'white',
+                border: 'none', borderRadius: 12, padding: '14px', fontSize: 16, fontWeight: 800, cursor: 'pointer', opacity: salvandoConfig ? 0.6 : 1,
+              }}>
+                {salvandoConfig ? 'Salvando...' : 'Salvar configuração'}
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Visão geral */}
         {aba === 'visao' && (
