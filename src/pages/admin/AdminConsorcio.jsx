@@ -17,6 +17,9 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
   const [senha, setSenha] = useState('')
   const [criando, setCriando] = useState(false)
   const [msg, setMsg] = useState('')
+  const [emailExistente, setEmailExistente] = useState('')
+  const [adicionando, setAdicionando] = useState(false)
+  const [msgExistente, setMsgExistente] = useState('')
 
   useEffect(() => { carregar() }, [consorcioId])
 
@@ -72,6 +75,37 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
       }
     } finally {
       setCriando(false)
+    }
+  }
+
+  async function adicionarExistente(e) {
+    e.preventDefault()
+    setMsgExistente('')
+    setAdicionando(true)
+    try {
+      const snap = await getDocs(collection(db, 'usuarios'))
+      let encontrado = null
+      snap.forEach(d => { if (d.data().email === emailExistente) encontrado = { id: d.id, ...d.data() } })
+
+      if (!encontrado) { setMsgExistente('❌ Nenhum usuário encontrado com esse e-mail.'); return }
+
+      const jaEMembro = membros.find(m => m.id === encontrado.id)
+      if (jaEMembro) { setMsgExistente('❌ Esse usuário já está neste consórcio.'); return }
+
+      await updateDoc(doc(db, 'usuarios', encontrado.id), { consorcios: arrayUnion(consorcioId) })
+      const jaTemDoc = await getDoc(doc(db, 'consorcios', consorcioId, 'membros', encontrado.id))
+      if (!jaTemDoc.exists()) {
+        await setDoc(doc(db, 'consorcios', consorcioId, 'membros', encontrado.id), {
+          cotas: 0, mesesEscolhidos: [], pagamentos: [], pagamentosMensais: [], entradaEm: Date.now(),
+        })
+      }
+      setMsgExistente(`✅ ${encontrado.nome} adicionado com sucesso!`)
+      setEmailExistente('')
+      await carregar()
+    } catch (err) {
+      setMsgExistente('❌ Erro: ' + err.message)
+    } finally {
+      setAdicionando(false)
     }
   }
 
@@ -208,11 +242,29 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
 
         {/* Novo participante */}
         {aba === 'novo' && (
-          <div style={{ background: 'white', borderRadius: 20, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.07)', maxWidth: 480 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 480 }}>
+
+            {/* Adicionar existente */}
+            <div style={{ background: '#eff6ff', border: '2px solid #bfdbfe', borderRadius: 20, padding: 28 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', marginBottom: 6 }}>Adicionar usuário existente</h3>
+              <p style={{ fontSize: 14, color: '#3b82f6', marginBottom: 20 }}>Usuário que já tem conta no sistema — informe o e-mail dele.</p>
+              <form onSubmit={adicionarExistente} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <input type="email" value={emailExistente} onChange={e => setEmailExistente(e.target.value)} required placeholder="email@existente.com"
+                  style={{ width: '100%', border: '2px solid #bfdbfe', borderRadius: 12, padding: '12px 16px', fontSize: 15, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
+                {msgExistente && <p style={{ fontSize: 14, color: msgExistente.includes('✅') ? '#16a34a' : '#dc2626' }}>{msgExistente}</p>}
+                <button type="submit" disabled={adicionando} style={{
+                  background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 12,
+                  padding: '12px', fontSize: 15, fontWeight: 800, cursor: 'pointer', opacity: adicionando ? 0.6 : 1,
+                }}>{adicionando ? 'Buscando...' : 'Adicionar ao consórcio'}</button>
+              </form>
+            </div>
+
+            {/* Criar novo */}
+            <div style={{ background: 'white', borderRadius: 20, padding: 28, boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
             <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <UserPlus size={22} /> Novo participante
+              <UserPlus size={22} /> Criar novo participante
             </h2>
-            <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 24 }}>Será adicionado ao {consorcio.nome}.</p>
+            <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 24 }}>Cria uma nova conta e adiciona ao {consorcio.nome}.</p>
             <form onSubmit={criarUsuario} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {[
                 { label: 'Nome completo', value: nome, set: setNome, type: 'text', ph: 'João Silva' },
@@ -230,9 +282,10 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                 background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', color: 'white',
                 border: 'none', borderRadius: 12, padding: '14px', fontSize: 16, fontWeight: 800, cursor: 'pointer', opacity: criando ? 0.6 : 1,
               }}>
-                {criando ? 'Criando...' : '+ Adicionar participante'}
+                {criando ? 'Criando...' : '+ Criar participante'}
               </button>
             </form>
+            </div>
           </div>
         )}
       </div>
