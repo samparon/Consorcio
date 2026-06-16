@@ -4,15 +4,13 @@ import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth'
 import { doc, setDoc, collection, getDocs, updateDoc } from 'firebase/firestore'
 import { initializeApp } from 'firebase/app'
 import { auth, db } from '../firebase'
-import { useAuth } from '../context/AuthContext'
-import { LogOut, UserPlus, Users, CheckCircle, Circle } from 'lucide-react'
+import { LogOut, UserPlus, CheckCircle, Circle, Users, DollarSign, Calendar, PlusCircle } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const VALOR_COTA = 100
 
 export default function Admin() {
-  const { perfil } = useAuth()
-  const [aba, setAba] = useState('visao') // 'visao' | 'usuarios' | 'novo'
+  const [aba, setAba] = useState('visao')
   const [participantes, setParticipantes] = useState([])
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
@@ -35,25 +33,19 @@ export default function Admin() {
     setMsg('')
     setCriando(true)
     try {
-      // Cria auth secundário para não deslogar o admin
       const app2 = initializeApp(auth.app.options, 'secondary-' + Date.now())
       const auth2 = getAuth(app2)
       const cred = await createUserWithEmailAndPassword(auth2, email, senha)
       await setDoc(doc(db, 'usuarios', cred.user.uid), {
-        nome,
-        email,
-        role: 'participante',
-        criadoEm: Date.now(),
-        cotas: 0,
-        mesesEscolhidos: [],
-        pagamentos: [],
+        nome, email, role: 'participante',
+        criadoEm: Date.now(), cotas: 0, mesesEscolhidos: [], pagamentos: [],
       })
       await auth2.signOut()
-      setMsg('Usuário criado com sucesso!')
+      setMsg('✅ Usuário criado com sucesso!')
       setNome(''); setEmail(''); setSenha('')
       await carregar()
     } catch (err) {
-      setMsg('Erro: ' + (err.code === 'auth/email-already-in-use' ? 'E-mail já cadastrado.' : err.message))
+      setMsg('❌ ' + (err.code === 'auth/email-already-in-use' ? 'E-mail já cadastrado.' : err.message))
     } finally {
       setCriando(false)
     }
@@ -63,82 +55,82 @@ export default function Admin() {
     const p = participantes.find(u => u.id === userId)
     if (!p) return
     const pagamentos = p.pagamentos || []
-    const jaExiste = pagamentos.includes(mes)
-    const novos = jaExiste ? pagamentos.filter(m => m !== mes) : [...pagamentos, mes]
+    const novos = pagamentos.includes(mes) ? pagamentos.filter(m => m !== mes) : [...pagamentos, mes]
     await updateDoc(doc(db, 'usuarios', userId), { pagamentos: novos })
     await carregar()
   }
 
-  const totalCotas = participantes.filter(p => p.role !== 'admin').reduce((acc, p) => acc + (Number(p.cotas) || 0), 0)
+  const membros = participantes.filter(p => p.role !== 'admin')
+  const totalCotas = membros.reduce((acc, p) => acc + (Number(p.cotas) || 0), 0)
   const potMensal = totalCotas * VALOR_COTA
   const totalMeses = totalCotas
 
-  const tabBtn = (id, label) => (
-    <button
-      onClick={() => setAba(id)}
-      className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${aba === id ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-      {label}
-    </button>
-  )
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">💰</span>
-          <span className="font-bold text-gray-800">Consórcio</span>
-          <span className="ml-2 bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">Admin</span>
+    <div className="min-h-screen" style={{ background: '#f0f4f8' }}>
+
+      {/* Navbar */}
+      <nav style={{ background: 'linear-gradient(135deg, #1e3a8a, #1d4ed8)' }} className="px-8 py-5 flex justify-between items-center shadow-lg">
+        <div className="flex items-center gap-3">
+          <span style={{ fontSize: 28 }}>💰</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: 'white' }}>Consórcio</span>
+          <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', fontSize: 13, fontWeight: 700, padding: '3px 12px', borderRadius: 20 }}>Admin</span>
         </div>
-        <button onClick={() => signOut(auth)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500">
-          <LogOut size={15} /> Sair
+        <button onClick={() => signOut(auth)} style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: 'none', border: 'none' }}>
+          <LogOut size={18} /> Sair
         </button>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px' }}>
 
         {/* Cards */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl shadow p-5 text-center">
-            <p className="text-xs text-gray-500 mb-1">Participantes</p>
-            <p className="text-2xl font-bold text-gray-800">{participantes.filter(p => p.role !== 'admin').length}</p>
-          </div>
-          <div className="bg-white rounded-xl shadow p-5 text-center">
-            <p className="text-xs text-gray-500 mb-1">Total de cotas</p>
-            <p className="text-2xl font-bold text-gray-800">{totalCotas}</p>
-          </div>
-          <div className="bg-blue-600 rounded-xl shadow p-5 text-center">
-            <p className="text-xs text-white opacity-80 mb-1">Pot mensal</p>
-            <p className="text-2xl font-bold text-white">{fmt(potMensal)}</p>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
+          {[
+            { icon: <Users size={28} />, label: 'Participantes', value: membros.length, color: '#1d4ed8', bg: '#eff6ff' },
+            { icon: <DollarSign size={28} />, label: 'Total de cotas', value: totalCotas, color: '#7c3aed', bg: '#f5f3ff' },
+            { icon: <Calendar size={28} />, label: 'Pot mensal', value: fmt(potMensal), color: 'white', bg: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', white: true },
+          ].map(({ icon, label, value, color, bg, white }) => (
+            <div key={label} style={{ background: bg, borderRadius: 16, padding: '24px 28px', boxShadow: '0 2px 12px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ color: white ? 'white' : color }}>{icon}</div>
+              <div>
+                <p style={{ fontSize: 14, color: white ? 'rgba(255,255,255,0.8)' : '#6b7280', marginBottom: 4 }}>{label}</p>
+                <p style={{ fontSize: 26, fontWeight: 800, color: white ? 'white' : color }}>{value}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Abas */}
-        <div className="flex gap-2 bg-white rounded-xl shadow p-2 w-fit">
-          {tabBtn('visao', 'Visão geral')}
-          {tabBtn('usuarios', 'Participantes')}
-          {tabBtn('novo', 'Novo usuário')}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+          {[['visao', 'Visão geral'], ['usuarios', 'Participantes'], ['novo', 'Novo usuário']].map(([id, label]) => (
+            <button key={id} onClick={() => setAba(id)} style={{
+              padding: '10px 22px', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: 'none',
+              background: aba === id ? '#1d4ed8' : 'white',
+              color: aba === id ? 'white' : '#374151',
+              boxShadow: aba === id ? '0 4px 12px rgba(29,78,216,0.3)' : '0 1px 4px rgba(0,0,0,0.08)',
+            }}>{label}</button>
+          ))}
         </div>
 
-        {/* Visão geral — calendário de meses */}
+        {/* Visão geral */}
         {aba === 'visao' && (
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="font-bold text-gray-800 text-lg mb-4">Calendário do consórcio</h2>
+          <div style={{ background: 'white', borderRadius: 20, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 24 }}>Calendário do consórcio</h2>
             {totalMeses === 0 ? (
-              <p className="text-gray-400 text-sm">Nenhum participante configurou cotas ainda.</p>
+              <p style={{ color: '#9ca3af', fontSize: 16 }}>Nenhum participante configurou cotas ainda.</p>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {Array.from({ length: totalMeses }, (_, i) => i + 1).map(mes => {
-                  const dono = participantes.find(p => p.mesesEscolhidos?.includes(mes))
+                  const dono = membros.find(p => p.mesesEscolhidos?.includes(mes))
                   return (
-                    <div key={mes} className="flex items-center justify-between border border-gray-100 rounded-lg px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm flex items-center justify-center">{mes}</span>
+                    <div key={mes} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '2px solid #f3f4f6', borderRadius: 12, padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#eff6ff', color: '#1d4ed8', fontWeight: 800, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{mes}</div>
                         <div>
-                          <p className="font-semibold text-gray-800 text-sm">{dono ? dono.nome : <span className="text-gray-400">Mês livre</span>}</p>
-                          {dono && <p className="text-xs text-gray-400">{dono.email}</p>}
+                          <p style={{ fontSize: 17, fontWeight: 700, color: dono ? '#111827' : '#9ca3af' }}>{dono ? dono.nome : 'Mês livre'}</p>
+                          {dono && <p style={{ fontSize: 13, color: '#6b7280' }}>{dono.email}</p>}
                         </div>
                       </div>
-                      <span className="text-sm font-bold text-green-600">{fmt(potMensal)}</span>
+                      <span style={{ fontSize: 18, fontWeight: 800, color: '#16a34a' }}>{fmt(potMensal)}</span>
                     </div>
                   )
                 })}
@@ -149,101 +141,77 @@ export default function Admin() {
 
         {/* Participantes */}
         {aba === 'usuarios' && (
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="font-bold text-gray-800 text-lg mb-4">Participantes</h2>
-            <div className="space-y-4">
-              {participantes.filter(p => p.role !== 'admin').map((p, idx) => (
-                <div key={p.id} className="border border-gray-100 rounded-xl p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="font-semibold text-gray-800">{idx + 1}º — {p.nome}</p>
-                      <p className="text-xs text-gray-400">{p.email}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-blue-600">{p.cotas || 0} cota{p.cotas !== 1 ? 's' : ''}</p>
-                      <p className="text-xs text-gray-400">{fmt((p.cotas || 0) * VALOR_COTA)}/mês</p>
-                    </div>
-                  </div>
-
-                  {p.cotas > 0 && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-2">Meses escolhidos — clique para marcar pagamento recebido:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {p.mesesEscolhidos?.sort((a, b) => a - b).map(mes => {
-                          const pago = p.pagamentos?.includes(mes)
-                          return (
-                            <button
-                              key={mes}
-                              onClick={() => marcarPagamento(p.id, mes)}
-                              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all
-                                ${pago ? 'bg-green-100 text-green-700 border-green-300' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-green-400'}`}>
-                              {pago ? <CheckCircle size={12} /> : <Circle size={12} />}
-                              Mês {mes}
-                            </button>
-                          )
-                        })}
+          <div style={{ background: 'white', borderRadius: 20, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 24 }}>Participantes</h2>
+            {membros.length === 0 ? (
+              <p style={{ color: '#9ca3af', fontSize: 16 }}>Nenhum participante cadastrado ainda.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {membros.map((p, idx) => (
+                  <div key={p.id} style={{ border: '2px solid #f3f4f6', borderRadius: 16, padding: 24 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                      <div>
+                        <p style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{idx + 1}º — {p.nome}</p>
+                        <p style={{ fontSize: 14, color: '#6b7280' }}>{p.email}</p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8' }}>{p.cotas || 0} cota{p.cotas !== 1 ? 's' : ''}</p>
+                        <p style={{ fontSize: 13, color: '#6b7280' }}>{fmt((p.cotas || 0) * VALOR_COTA)}/mês</p>
                       </div>
                     </div>
-                  )}
-
-                  {(!p.cotas || p.cotas === 0) && (
-                    <p className="text-xs text-yellow-600 bg-yellow-50 px-3 py-1.5 rounded-lg">Ainda não configurou as cotas.</p>
-                  )}
-                </div>
-              ))}
-              {participantes.filter(p => p.role !== 'admin').length === 0 && (
-                <p className="text-gray-400 text-sm">Nenhum participante cadastrado ainda.</p>
-              )}
-            </div>
+                    {p.cotas > 0 ? (
+                      <div>
+                        <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 10 }}>Clique para marcar pagamento recebido:</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                          {p.mesesEscolhidos?.sort((a, b) => a - b).map(mes => {
+                            const pago = p.pagamentos?.includes(mes)
+                            return (
+                              <button key={mes} onClick={() => marcarPagamento(p.id, mes)} style={{
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                padding: '8px 16px', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                                border: `2px solid ${pago ? '#16a34a' : '#e5e7eb'}`,
+                                background: pago ? '#f0fdf4' : '#f9fafb', color: pago ? '#16a34a' : '#374151',
+                              }}>
+                                {pago ? <CheckCircle size={15} /> : <Circle size={15} />} Mês {mes}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ fontSize: 14, color: '#d97706', background: '#fffbeb', padding: '8px 14px', borderRadius: 8 }}>Ainda não configurou as cotas.</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Novo usuário */}
         {aba === 'novo' && (
-          <div className="bg-white rounded-xl shadow p-6 max-w-md">
-            <h2 className="font-bold text-gray-800 text-lg mb-4 flex items-center gap-2">
-              <UserPlus size={18} /> Criar novo usuário
+          <div style={{ background: 'white', borderRadius: 20, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.08)', maxWidth: 480 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <UserPlus size={22} /> Criar novo usuário
             </h2>
-            <form onSubmit={criarUsuario} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome completo</label>
-                <input
-                  value={nome}
-                  onChange={e => setNome(e.target.value)}
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="João Silva"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="joao@email.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-                <input
-                  type="password"
-                  value={senha}
-                  onChange={e => setSenha(e.target.value)}
-                  required
-                  minLength={6}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Mínimo 6 caracteres"
-                />
-              </div>
-              {msg && <p className={`text-sm ${msg.includes('sucesso') ? 'text-green-600' : 'text-red-500'}`}>{msg}</p>}
-              <button
-                type="submit"
-                disabled={criando}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg text-sm disabled:opacity-50">
-                {criando ? 'Criando...' : 'Criar usuário'}
+            <form onSubmit={criarUsuario} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {[
+                { label: 'Nome completo', value: nome, set: setNome, type: 'text', ph: 'João Silva' },
+                { label: 'E-mail', value: email, set: setEmail, type: 'email', ph: 'joao@email.com' },
+                { label: 'Senha', value: senha, set: setSenha, type: 'password', ph: 'Mínimo 6 caracteres' },
+              ].map(({ label, value, set, type, ph }) => (
+                <div key={label}>
+                  <label style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 8 }}>{label}</label>
+                  <input type={type} value={value} onChange={e => set(e.target.value)} required placeholder={ph}
+                    style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '12px 16px', fontSize: 15, outline: 'none', color: '#111827' }} />
+                </div>
+              ))}
+              {msg && <p style={{ fontSize: 15, color: msg.includes('✅') ? '#16a34a' : '#dc2626' }}>{msg}</p>}
+              <button type="submit" disabled={criando} style={{
+                background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', color: 'white',
+                border: 'none', borderRadius: 12, padding: '14px', fontSize: 16, fontWeight: 800, cursor: 'pointer', opacity: criando ? 0.6 : 1,
+              }}>
+                {criando ? 'Criando...' : '+ Criar usuário'}
               </button>
             </form>
           </div>
