@@ -3,7 +3,7 @@ import { signOut } from 'firebase/auth'
 import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { auth, db } from '../../firebase'
 import { useAuth } from '../../context/AuthContext'
-import { LogOut, CheckCircle, Clock, BadgeCheck, ArrowLeft, Copy, Check } from 'lucide-react'
+import { LogOut, CheckCircle, Clock, BadgeCheck, ArrowLeft, Copy, Check, User, Key } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -19,6 +19,9 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
   const [msg, setMsg] = useState('')
   const [aba, setAba] = useState('cotas')
   const [copiado, setCopiado] = useState(false)
+  const [chavePix, setChavePix] = useState('')
+  const [salvandoPix, setSalvandoPix] = useState(false)
+  const [msgPix, setMsgPix] = useState('')
 
   useEffect(() => { carregar() }, [user, consorcioId])
 
@@ -34,10 +37,27 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
     if (dados.cotas) setCotas(String(dados.cotas))
     if (dados.mesesEscolhidos) setMesesSelecionados(dados.mesesEscolhidos)
 
+    const uSnap = await getDoc(doc(db, 'usuarios', user.uid))
+    if (uSnap.exists()) setChavePix(uSnap.data()?.chavePix || '')
+
     const todosSnap = await getDocs(collection(db, 'consorcios', consorcioId, 'membros'))
     let ocupados = []
     todosSnap.forEach(d => { if (d.id !== user.uid && d.data().mesesEscolhidos) ocupados.push(...d.data().mesesEscolhidos) })
     setMesesOcupados(ocupados)
+  }
+
+  async function salvarPix(e) {
+    e.preventDefault()
+    setSalvandoPix(true)
+    setMsgPix('')
+    try {
+      await updateDoc(doc(db, 'usuarios', user.uid), { chavePix: chavePix.trim() })
+      setMsgPix('✅ Chave PIX salva!')
+    } catch {
+      setMsgPix('❌ Erro ao salvar.')
+    } finally {
+      setSalvandoPix(false)
+    }
   }
 
   function toggleMes(mes) {
@@ -109,8 +129,8 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
         </div>
 
         {/* Abas */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[['cotas', 'Minhas cotas'], ['pagamentos', 'Pagamentos']].map(([id, label]) => (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[['cotas', 'Minhas cotas'], ['pagamentos', 'Pagamentos'], ['perfil', 'Meu Perfil'], ['regras', 'Regras']].map(([id, label]) => (
             <button key={id} onClick={() => setAba(id)} style={{
               padding: '12px 28px', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', border: 'none',
               background: aba === id ? '#1d4ed8' : 'white', color: aba === id ? 'white' : '#374151',
@@ -278,6 +298,76 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
           </div>
           </>
         )}
+
+        {/* ABA: Perfil */}
+        {aba === 'perfil' && (
+          <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)', maxWidth: 520 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+              <div style={{ width: 52, height: 52, borderRadius: 16, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <User size={26} color="#1d4ed8" />
+              </div>
+              <div>
+                <p style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: 0 }}>{perfil?.nome}</p>
+                <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>{perfil?.email}</p>
+              </div>
+            </div>
+
+            <form onSubmit={salvarPix} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, fontWeight: 700, color: '#374151', marginBottom: 10 }}>
+                  <Key size={18} color="#16a34a" /> Minha chave PIX
+                </label>
+                <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 12 }}>
+                  O admin usa essa chave para te pagar até o dia 15 quando você for contemplado.
+                </p>
+                <input
+                  type="text"
+                  value={chavePix}
+                  onChange={e => setChavePix(e.target.value)}
+                  placeholder="CPF, celular, e-mail ou chave aleatória"
+                  required
+                  style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '14px 18px', fontSize: 16, outline: 'none', color: '#111827', boxSizing: 'border-box' }}
+                />
+              </div>
+              {msgPix && <p style={{ fontSize: 15, color: msgPix.includes('✅') ? '#16a34a' : '#dc2626', margin: 0 }}>{msgPix}</p>}
+              <button type="submit" disabled={salvandoPix} style={{
+                background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: 'white',
+                border: 'none', borderRadius: 12, padding: '14px', fontSize: 16, fontWeight: 800, cursor: 'pointer', opacity: salvandoPix ? 0.6 : 1,
+              }}>
+                {salvandoPix ? 'Salvando...' : 'Salvar chave PIX'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* ABA: Regras */}
+        {aba === 'regras' && (
+          <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
+            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', marginBottom: 28 }}>Regras do Consórcio</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {[
+                { n: 1, texto: 'O vencimento da cota mensal ocorrerá todo dia 10 de cada mês.' },
+                { n: 2, texto: 'O pagamento do prêmio ao participante contemplado será realizado até o dia 15 de cada mês.' },
+                { n: 3, texto: 'O participante contemplado deverá estar em dia com o pagamento de sua cota.' },
+                { n: 4, texto: 'Caso o participante esteja com a cota vencida, terá até a data da contemplação para regularizar o débito.' },
+                { n: 5, texto: 'Se o participante for contemplado e permanecer inadimplente na data da contemplação, não poderá receber o prêmio naquele mês, sendo o pagamento condicionado à quitação integral das parcelas em atraso.' },
+                { n: 6, texto: 'Os pagamentos das cotas deverão ser realizados via PIX, para a chave que será oportunamente informada pela responsável pelo consórcio.' },
+                { n: 7, texto: 'Recomenda-se que todos os participantes enviem o comprovante de pagamento após a realização do PIX, a fim de facilitar o controle e a organização do grupo.' },
+              ].map(({ n, texto }) => (
+                <div key={n} style={{ display: 'flex', gap: 16, padding: '18px 20px', background: '#f8fafc', borderRadius: 14, border: '1px solid #e5e7eb' }}>
+                  <div style={{ minWidth: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', color: 'white', fontWeight: 800, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</div>
+                  <p style={{ fontSize: 16, color: '#374151', margin: 0, lineHeight: 1.6 }}>{texto}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 28, padding: '18px 20px', background: '#fefce8', border: '2px solid #fde047', borderRadius: 14 }}>
+              <p style={{ fontSize: 15, color: '#854d0e', margin: 0, fontWeight: 600, lineHeight: 1.6 }}>
+                Declaram os participantes estar cientes e de acordo com as regras acima estabelecidas para o bom funcionamento do consórcio.
+              </p>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )

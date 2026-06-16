@@ -239,6 +239,15 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                         </button>
                       </div>
                     </div>
+                    {m.perfil?.chavePix && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 10, padding: '10px 16px', marginBottom: 14 }}>
+                        <span style={{ fontSize: 18 }}>💸</span>
+                        <div>
+                          <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 600 }}>Chave PIX para pagar (até dia 15): </span>
+                          <span style={{ fontSize: 16, fontWeight: 800, color: '#15803d' }}>{m.perfil.chavePix}</span>
+                        </div>
+                      </div>
+                    )}
                     {m.cotas > 0 ? (
                       <div>
                         <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 10 }}>Marcar recebimento do consórcio:</p>
