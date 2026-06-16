@@ -171,24 +171,23 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
         {aba === 'pagamentos' && (
           <>
           {/* Card PIX */}
-          <div style={{ background: 'linear-gradient(135deg, #14532d, #16a34a)', borderRadius: 24, padding: '28px 36px', boxShadow: '0 8px 24px rgba(22,163,74,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
-            <div>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: 0, fontWeight: 600, letterSpacing: 1 }}>PAGUE VIA PIX</p>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: '4px 0 12px', }}>Chave celular — vencimento todo dia 10</p>
-              <p style={{ fontSize: 30, fontWeight: 900, color: 'white', margin: 0, letterSpacing: 1 }}>61996166127</p>
+          <div style={{ background: 'linear-gradient(135deg, #14532d, #16a34a)', borderRadius: 20, padding: '20px', boxShadow: '0 8px 24px rgba(22,163,74,0.3)' }}>
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', margin: '0 0 2px', fontWeight: 600, letterSpacing: 1 }}>PAGUE VIA PIX</p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: '0 0 10px' }}>Chave celular — vencimento todo dia 10</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <p style={{ fontSize: 24, fontWeight: 900, color: 'white', margin: 0, letterSpacing: 1 }}>61996166127</p>
+              <button
+                onClick={() => { navigator.clipboard.writeText('61996166127'); setCopiado(true); setTimeout(() => setCopiado(false), 2500) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                  background: copiado ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.15)',
+                  border: '2px solid rgba(255,255,255,0.4)', borderRadius: 12,
+                  padding: '10px 16px', cursor: 'pointer', color: 'white', fontWeight: 800, fontSize: 14,
+                }}>
+                {copiado ? <Check size={18} /> : <Copy size={18} />}
+                {copiado ? 'Copiado!' : 'Copiar'}
+              </button>
             </div>
-            <button
-              onClick={() => { navigator.clipboard.writeText('61996166127'); setCopiado(true); setTimeout(() => setCopiado(false), 2500) }}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                background: copiado ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.15)',
-                border: '2px solid rgba(255,255,255,0.4)', borderRadius: 16,
-                padding: '16px 24px', cursor: 'pointer', color: 'white', fontWeight: 800, fontSize: 14,
-                transition: 'all 0.2s', minWidth: 100,
-              }}>
-              {copiado ? <Check size={24} /> : <Copy size={24} />}
-              {copiado ? 'Copiado!' : 'Copiar'}
-            </button>
           </div>
 
           <div style={{ background: 'white', borderRadius: 20, padding: '24px 20px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
@@ -206,33 +205,37 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
                 const valorMensal = (membro?.cotas || 0) * valorCota
                 return (
                   <div key={mes} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     border: `2px solid ${pago ? '#bbf7d0' : '#e5e7eb'}`,
-                    background: pago ? '#f0fdf4' : 'white', borderRadius: 16, padding: '20px 24px',
+                    background: pago ? '#f0fdf4' : 'white', borderRadius: 16, padding: '16px',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: pago ? '#dcfce7' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {pago ? <CheckCircle size={24} color="#16a34a" /> : <Clock size={24} color="#1d4ed8" />}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: pago ? 0 : 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: pago ? '#dcfce7' : '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {pago ? <CheckCircle size={20} color="#16a34a" /> : <Clock size={20} color="#1d4ed8" />}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: pago ? '#15803d' : '#111827', margin: 0 }}>Mês {mes}</p>
+                          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>Vencimento: dia 10 · {fmt(valorMensal)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p style={{ fontSize: 18, fontWeight: 800, color: pago ? '#15803d' : '#111827', margin: 0 }}>Mês {mes}</p>
-                        <p style={{ fontSize: 14, color: '#6b7280', marginTop: 2 }}>Vencimento: dia 10 · {fmt(valorMensal)}</p>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 16, fontWeight: 800, color: pago ? '#16a34a' : '#374151' }}>
+                          {pago ? '✅ Pago' : fmt(valorMensal)}
+                        </span>
+                        {pago && (
+                          <p style={{ margin: 0 }}>
+                            <button onClick={() => marcarPagamentoMensal(mes)} style={{ fontSize: 12, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>desfazer</button>
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      <span style={{ fontSize: 18, fontWeight: 800, color: pago ? '#16a34a' : '#374151' }}>
-                        {pago ? '✅ Pago' : fmt(valorMensal)}
-                      </span>
-                      {!pago ? (
-                        <button onClick={() => marcarPagamentoMensal(mes)} style={{
-                          display: 'flex', alignItems: 'center', gap: 8,
-                          background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: 'white',
-                          border: 'none', borderRadius: 12, padding: '12px 22px', fontSize: 15, fontWeight: 800, cursor: 'pointer',
-                        }}><BadgeCheck size={18} /> Marcar pago</button>
-                      ) : (
-                        <button onClick={() => marcarPagamentoMensal(mes)} style={{ fontSize: 13, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}>desfazer</button>
-                      )}
-                    </div>
+                    {!pago && (
+                      <button onClick={() => marcarPagamentoMensal(mes)} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%',
+                        background: 'linear-gradient(135deg, #16a34a, #22c55e)', color: 'white',
+                        border: 'none', borderRadius: 12, padding: '12px', fontSize: 15, fontWeight: 800, cursor: 'pointer',
+                      }}><BadgeCheck size={18} /> Marcar pago</button>
+                    )}
                   </div>
                 )
               })}
