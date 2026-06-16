@@ -11,7 +11,6 @@ export default function AdminHome({ onEntrar }) {
   const [criando, setCriando] = useState(false)
   const [exportando, setExportando] = useState(false)
   const [nome, setNome] = useState('')
-  const [totalCotas, setTotalCotas] = useState('12')
   const [valorCota, setValorCota] = useState('100')
   const [salvando, setSalvando] = useState(false)
   const [msg, setMsg] = useState('')
@@ -68,12 +67,12 @@ export default function AdminHome({ onEntrar }) {
     try {
       await addDoc(collection(db, 'consorcios'), {
         nome,
-        totalCotasPlano: Number(totalCotas),
+        totalCotasPlano: 0,
         valorCota: Number(valorCota),
         criadoEm: Date.now(),
       })
       setMsg('✅ Consórcio criado!')
-      setNome(''); setTotalCotas('12'); setValorCota('100')
+      setNome(''); setValorCota('100')
       setCriando(false)
       await carregar()
     } catch {
@@ -165,22 +164,16 @@ export default function AdminHome({ onEntrar }) {
                 <input value={nome} onChange={e => setNome(e.target.value)} required placeholder="Ex: Consórcio 1"
                   style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '13px 16px', fontSize: 16, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Total de cotas</label>
-                  <input type="number" min="1" value={totalCotas} onChange={e => setTotalCotas(e.target.value)} required
-                    style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '13px 16px', fontSize: 16, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
-                </div>
-                <div>
+              <div>
                   <label style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Valor por cota (R$)</label>
                   <input type="number" min="1" value={valorCota} onChange={e => setValorCota(e.target.value)} required
                     style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '13px 16px', fontSize: 16, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
-                </div>
               </div>
-              {totalCotas && valorCota && (
+              </div>
+              {valorCota && (
                 <div style={{ background: '#eff6ff', borderRadius: 12, padding: '14px 18px' }}>
                   <p style={{ fontSize: 15, color: '#1d4ed8', fontWeight: 700, margin: 0 }}>
-                    Pot mensal: {fmt(Number(totalCotas) * Number(valorCota))} · {totalCotas} meses de duração
+                    Valor por cota: {fmt(Number(valorCota))} · Total calculado conforme participantes
                   </p>
                 </div>
               )}

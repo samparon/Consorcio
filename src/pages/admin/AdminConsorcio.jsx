@@ -43,6 +43,13 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
     }
     lista.sort((a, b) => (a.entradaEm || 0) - (b.entradaEm || 0))
     setMembros(lista)
+
+    // Atualiza totalCotasPlano automaticamente
+    const totalCalculado = lista.reduce((acc, m) => acc + (Number(m.cotas) || 0), 0)
+    if (totalCalculado !== cSnap.data().totalCotasPlano) {
+      await updateDoc(doc(db, 'consorcios', consorcioId), { totalCotasPlano: totalCalculado })
+      setConsorcio(prev => ({ ...prev, totalCotasPlano: totalCalculado }))
+    }
   }
 
   function toggleMes(mes, lista, setLista, maxCotas) {
