@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { signOut } from 'firebase/auth'
-import { doc, getDoc, updateDoc, collection, getDocs, query, orderBy } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
-import { LogOut, CheckCircle, Clock } from 'lucide-react'
+import { LogOut, CheckCircle } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const VALOR_COTA = 100
@@ -15,7 +15,7 @@ export default function Participante() {
   const [totalMeses, setTotalMeses] = useState(0)
   const [cotas, setCotas] = useState('')
   const [mesesSelecionados, setMesesSelecionados] = useState([])
-  const [fase, setFase] = useState('ver') // 'ver' | 'escolher'
+  const [fase, setFase] = useState('ver')
   const [salvando, setSalvando] = useState(false)
   const [msg, setMsg] = useState('')
 
@@ -29,7 +29,6 @@ export default function Participante() {
     if (dados.cotas) setCotas(String(dados.cotas))
     if (dados.mesesEscolhidos) setMesesSelecionados(dados.mesesEscolhidos)
 
-    // busca todos usuários para saber meses ocupados e total de meses
     const todosSnap = await getDocs(collection(db, 'usuarios'))
     let ocupados = []
     let totalCotas = 0
@@ -38,10 +37,7 @@ export default function Participante() {
       if (u.mesesEscolhidos) ocupados.push(...u.mesesEscolhidos)
       if (u.cotas) totalCotas += Number(u.cotas)
     })
-    // remove os meses do próprio usuário para que ele possa alterá-los
-    if (dados.mesesEscolhidos) {
-      ocupados = ocupados.filter(m => !dados.mesesEscolhidos.includes(m))
-    }
+    if (dados.mesesEscolhidos) ocupados = ocupados.filter(m => !dados.mesesEscolhidos.includes(m))
     setMesesOcupados(ocupados)
     setTotalMeses(totalCotas)
   }
@@ -77,113 +73,107 @@ export default function Participante() {
     }
   }
 
-  const totalMesesComNovas = totalMeses + (meusDados?.cotas ? 0 : Number(cotas) || 0)
   const mesesParaExibir = Math.max(totalMeses, Number(cotas) || 0, 12)
   const jaConfigurou = meusDados?.cotas && meusDados?.mesesEscolhidos?.length > 0
   const potMensal = totalMeses * VALOR_COTA
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">💰</span>
-          <span className="font-bold text-gray-800">Consórcio</span>
+    <div style={{ minHeight: '100vh', background: '#f0f4f8' }}>
+
+      {/* Navbar */}
+      <nav style={{ background: 'linear-gradient(135deg, #1e3a8a, #1d4ed8)', padding: '18px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 30 }}>💰</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: 'white' }}>Consórcio</span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">Olá, <strong>{perfil?.nome || user?.email}</strong></span>
-          <button onClick={() => signOut(auth)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-500">
-            <LogOut size={15} /> Sair
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <span style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)' }}>Olá, <strong>{perfil?.nome || user?.email}</strong></span>
+          <button onClick={() => signOut(auth)} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.75)', fontSize: 15, background: 'none', border: 'none', cursor: 'pointer' }}>
+            <LogOut size={18} /> Sair
           </button>
         </div>
       </nav>
 
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '40px 24px', display: 'flex', flexDirection: 'column', gap: 28 }}>
 
-        {/* Resumo do consórcio */}
-        <div className="bg-blue-600 text-white rounded-xl p-6">
-          <p className="text-sm opacity-80 mb-1">Pot mensal estimado</p>
-          <p className="text-3xl font-bold">{fmt(potMensal)}</p>
-          <p className="text-sm opacity-80 mt-1">{totalMeses} cotas no total · {VALOR_COTA} reais/cota/mês</p>
+        {/* Card pot mensal */}
+        <div style={{ background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', borderRadius: 24, padding: '36px 40px', boxShadow: '0 8px 30px rgba(29,78,216,0.35)' }}>
+          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>Pot mensal estimado</p>
+          <p style={{ fontSize: 52, fontWeight: 900, color: 'white', margin: 0 }}>{fmt(potMensal)}</p>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>{totalMeses} cotas no total · R$ {VALOR_COTA}/cota/mês</p>
         </div>
 
         {/* Minhas cotas */}
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="font-bold text-gray-800 text-lg mb-4">Minhas cotas</h2>
+        <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', marginBottom: 28 }}>Minhas cotas</h2>
 
           {jaConfigurou && fase === 'ver' ? (
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Cotas compradas</span>
-                <span className="font-semibold">{meusDados.cotas}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Pagamento mensal</span>
-                <span className="font-semibold text-blue-600">{fmt(meusDados.cotas * VALOR_COTA)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Meses para receber</span>
-                <span className="font-semibold text-green-600">{meusDados.mesesEscolhidos?.sort((a,b)=>a-b).join(', ')}</span>
-              </div>
-              <button
-                onClick={() => { setFase('escolher'); setMsg('') }}
-                className="mt-2 text-sm text-blue-600 hover:underline">
-                Alterar escolha
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {[
+                { label: 'Cotas compradas', value: meusDados.cotas },
+                { label: 'Pagamento mensal', value: fmt(meusDados.cotas * VALOR_COTA), color: '#1d4ed8' },
+                { label: 'Meses para receber', value: meusDados.mesesEscolhidos?.sort((a,b)=>a-b).join(', '), color: '#16a34a' },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f3f4f6', paddingBottom: 18 }}>
+                  <span style={{ fontSize: 17, color: '#6b7280' }}>{label}</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: color || '#111827' }}>{value}</span>
+                </div>
+              ))}
+              <button onClick={() => { setFase('escolher'); setMsg('') }}
+                style={{ alignSelf: 'flex-start', fontSize: 16, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, marginTop: 8 }}>
+                ✏️ Alterar escolha
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quantas cotas você quer comprar?</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={cotas}
+                <label style={{ display: 'block', fontSize: 17, fontWeight: 700, color: '#374151', marginBottom: 12 }}>Quantas cotas você quer comprar?</label>
+                <input type="number" min="1" value={cotas}
                   onChange={e => { setCotas(e.target.value); setMesesSelecionados([]) }}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Ex: 2"
-                />
-                {cotas && <p className="text-xs text-gray-400 mt-1">Você pagará {fmt(Number(cotas) * VALOR_COTA)}/mês</p>}
+                  style={{ border: '2px solid #e5e7eb', borderRadius: 12, padding: '14px 18px', fontSize: 18, width: 140, outline: 'none', color: '#111827' }} />
+                {cotas && <p style={{ fontSize: 15, color: '#6b7280', marginTop: 8 }}>Você pagará {fmt(Number(cotas) * VALOR_COTA)}/mês</p>}
               </div>
 
               {cotas && Number(cotas) > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">
+                  <p style={{ fontSize: 17, fontWeight: 700, color: '#374151', marginBottom: 16 }}>
                     Escolha {cotas} mês{Number(cotas) > 1 ? 'es' : ''} para receber
-                    <span className="text-gray-400 ml-1">({mesesSelecionados.length}/{cotas} escolhidos)</span>
+                    <span style={{ fontSize: 15, fontWeight: 500, color: '#9ca3af', marginLeft: 8 }}>({mesesSelecionados.length}/{cotas} escolhidos)</span>
                   </p>
-                  <div className="grid grid-cols-6 gap-2">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
                     {Array.from({ length: mesesParaExibir }, (_, i) => i + 1).map(mes => {
                       const ocupado = mesesOcupados.includes(mes)
                       const selecionado = mesesSelecionados.includes(mes)
                       return (
-                        <button
-                          key={mes}
-                          disabled={ocupado}
-                          onClick={() => toggleMes(mes)}
-                          className={`py-2 rounded-lg text-sm font-semibold border-2 transition-all
-                            ${ocupado ? 'bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed' :
-                              selecionado ? 'bg-blue-600 text-white border-blue-600' :
-                              'bg-white text-gray-700 border-gray-200 hover:border-blue-400'}`}>
+                        <button key={mes} disabled={ocupado} onClick={() => toggleMes(mes)} style={{
+                          padding: '16px 8px', borderRadius: 12, fontSize: 17, fontWeight: 800,
+                          cursor: ocupado ? 'not-allowed' : 'pointer',
+                          border: `2px solid ${ocupado ? '#f3f4f6' : selecionado ? '#1d4ed8' : '#e5e7eb'}`,
+                          background: ocupado ? '#f9fafb' : selecionado ? '#1d4ed8' : 'white',
+                          color: ocupado ? '#d1d5db' : selecionado ? 'white' : '#374151',
+                        }}>
                           {mes}
                         </button>
                       )
                     })}
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">Meses em cinza já foram escolhidos por outros participantes.</p>
+                  <p style={{ fontSize: 14, color: '#9ca3af', marginTop: 12 }}>Meses em cinza já foram escolhidos por outros participantes.</p>
                 </div>
               )}
 
-              {msg && <p className={`text-sm ${msg.includes('sucesso') ? 'text-green-600' : 'text-red-500'}`}>{msg}</p>}
+              {msg && <p style={{ fontSize: 16, color: msg.includes('sucesso') ? '#16a34a' : '#dc2626' }}>{msg}</p>}
 
-              <div className="flex gap-3">
-                <button
-                  onClick={salvar}
-                  disabled={salvando}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg text-sm disabled:opacity-50">
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <button onClick={salvar} disabled={salvando} style={{
+                  background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', color: 'white',
+                  border: 'none', borderRadius: 12, padding: '14px 32px', fontSize: 17, fontWeight: 800,
+                  cursor: salvando ? 'not-allowed' : 'pointer', opacity: salvando ? 0.6 : 1,
+                }}>
                   {salvando ? 'Salvando...' : 'Confirmar'}
                 </button>
                 {jaConfigurou && (
-                  <button onClick={() => setFase('ver')} className="text-sm text-gray-500 hover:underline px-2">
+                  <button onClick={() => setFase('ver')} style={{ fontSize: 16, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer' }}>
                     Cancelar
                   </button>
                 )}
@@ -192,18 +182,18 @@ export default function Participante() {
           )}
         </div>
 
-        {/* Linha do tempo */}
+        {/* Meses de recebimento */}
         {jaConfigurou && (
-          <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="font-bold text-gray-800 text-lg mb-4">Seus meses de recebimento</h2>
-            <div className="space-y-2">
+          <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.08)' }}>
+            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', marginBottom: 24 }}>Seus meses de recebimento</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {meusDados.mesesEscolhidos?.sort((a, b) => a - b).map(mes => (
-                <div key={mes} className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle size={16} className="text-green-500" />
-                    <span className="font-semibold text-green-800">Mês {mes}</span>
+                <div key={mes} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 14, padding: '20px 24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <CheckCircle size={22} color="#16a34a" />
+                    <span style={{ fontSize: 20, fontWeight: 800, color: '#15803d' }}>Mês {mes}</span>
                   </div>
-                  <span className="text-green-700 font-bold">{fmt(potMensal)}</span>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: '#15803d' }}>{fmt(potMensal)}</span>
                 </div>
               ))}
             </div>
