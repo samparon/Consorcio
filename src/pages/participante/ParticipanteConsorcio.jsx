@@ -93,36 +93,36 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f0f4f8' }}>
-      <nav style={{ background: 'linear-gradient(135deg, #1e3a8a, #1d4ed8)', padding: '18px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <button onClick={onVoltar} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.8)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 15 }}>
-            <ArrowLeft size={18} /> Voltar
+      <nav style={{ background: 'linear-gradient(135deg, #1e3a8a, #1d4ed8)', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <button onClick={onVoltar} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(255,255,255,0.8)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap' }}>
+            <ArrowLeft size={16} /> Voltar
           </button>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 20 }}>|</span>
-          <span style={{ fontSize: 20, fontWeight: 800, color: 'white' }}>💰 {consorcio.nome}</span>
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>💰 {consorcio.nome}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.85)' }}>Olá, <strong>{perfil?.nome}</strong></span>
-          <button onClick={() => signOut(auth)} style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(255,255,255,0.75)', fontSize: 15, background: 'none', border: 'none', cursor: 'pointer' }}>
-            <LogOut size={18} /> Sair
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>Olá, <strong>{perfil?.nome?.split(' ')[0]}</strong></span>
+          <button onClick={() => signOut(auth)} style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(255,255,255,0.75)', fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <LogOut size={16} /> Sair
           </button>
         </div>
       </nav>
 
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '40px 24px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* Pot */}
-        <div style={{ background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', borderRadius: 24, padding: '36px 40px', boxShadow: '0 8px 30px rgba(29,78,216,0.3)' }}>
-          <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.8)', marginBottom: 8 }}>Pot mensal — {consorcio.nome}</p>
-          <p style={{ fontSize: 52, fontWeight: 900, color: 'white', margin: 0 }}>{fmt(potMensal)}</p>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>{totalMeses} cotas · {fmt(valorCota)}/cota/mês</p>
+        <div style={{ background: 'linear-gradient(135deg, #1d4ed8, #0ea5e9)', borderRadius: 20, padding: '24px 24px', boxShadow: '0 8px 30px rgba(29,78,216,0.3)' }}>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', marginBottom: 4 }}>Pot mensal — {consorcio.nome}</p>
+          <p style={{ fontSize: 38, fontWeight: 900, color: 'white', margin: 0 }}>{fmt(potMensal)}</p>
+          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 6 }}>{totalMeses} cotas · {fmt(valorCota)}/cota/mês</p>
         </div>
 
         {/* Abas */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
           {[['cotas', 'Minhas cotas'], ['pagamentos', 'Pagamentos'], ['perfil', 'Meu Perfil'], ['regras', 'Regras']].map(([id, label]) => (
             <button key={id} onClick={() => setAba(id)} style={{
-              padding: '12px 28px', borderRadius: 12, fontSize: 16, fontWeight: 700, cursor: 'pointer', border: 'none',
+              padding: '11px 20px', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', border: 'none', whiteSpace: 'nowrap',
               background: aba === id ? '#1d4ed8' : 'white', color: aba === id ? 'white' : '#374151',
               boxShadow: aba === id ? '0 4px 12px rgba(29,78,216,0.3)' : '0 1px 4px rgba(0,0,0,0.07)',
             }}>{label}</button>
@@ -131,7 +131,7 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
 
         {/* ABA: Cotas */}
         {aba === 'cotas' && (
-          <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: '24px 20px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
             <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', marginBottom: 28 }}>Minhas cotas</h2>
             {temCotas ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -191,8 +191,8 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
             </button>
           </div>
 
-          <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: '24px 20px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', margin: 0 }}>Meus pagamentos</h2>
               <div style={{ textAlign: 'right' }}>
                 <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>Total pago</p>
@@ -243,7 +243,7 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
 
         {/* ABA: Perfil */}
         {aba === 'perfil' && (
-          <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)', maxWidth: 520 }}>
+          <div style={{ background: 'white', borderRadius: 20, padding: '24px 20px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
               <div style={{ width: 52, height: 52, borderRadius: 16, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <User size={26} color="#1d4ed8" />
@@ -316,8 +316,8 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
 
         {/* ABA: Regras */}
         {aba === 'regras' && (
-          <div style={{ background: 'white', borderRadius: 24, padding: '36px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
-            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', marginBottom: 28 }}>Regras do Consórcio</h2>
+          <div style={{ background: 'white', borderRadius: 20, padding: '24px 20px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
+            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 20 }}>Regras do Consórcio</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[
                 { n: 1, texto: 'O vencimento da cota mensal ocorrerá todo dia 10 de cada mês.' },
