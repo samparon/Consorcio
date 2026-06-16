@@ -165,10 +165,9 @@ export default function AdminHome({ onEntrar }) {
                   style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '13px 16px', fontSize: 16, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
               </div>
               <div>
-                  <label style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Valor por cota (R$)</label>
-                  <input type="number" min="1" value={valorCota} onChange={e => setValorCota(e.target.value)} required
-                    style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '13px 16px', fontSize: 16, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
-              </div>
+                <label style={{ display: 'block', fontSize: 15, fontWeight: 700, color: '#374151', marginBottom: 8 }}>Valor por cota (R$)</label>
+                <input type="number" min="1" value={valorCota} onChange={e => setValorCota(e.target.value)} required
+                  style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 12, padding: '13px 16px', fontSize: 16, outline: 'none', color: '#111827', boxSizing: 'border-box' }} />
               </div>
               {valorCota && (
                 <div style={{ background: '#eff6ff', borderRadius: 12, padding: '14px 18px' }}>
