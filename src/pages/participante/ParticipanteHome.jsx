@@ -16,20 +16,24 @@ export default function ParticipanteHome({ onEntrar }) {
 
   async function carregar() {
     if (!user) return
-    const uSnap = await getDoc(doc(db, 'usuarios', user.uid))
-    const ids = uSnap.data()?.consorcios || []
-    const lista = []
-    for (const id of ids) {
-      const cSnap = await getDoc(doc(db, 'consorcios', id))
-      if (!cSnap.exists()) continue
-      const mSnap = await getDoc(doc(db, 'consorcios', id, 'membros', user.uid))
-      lista.push({ id, ...cSnap.data(), membro: mSnap.exists() ? mSnap.data() : {} })
+    try {
+      const uSnap = await getDoc(doc(db, 'usuarios', user.uid))
+      const ids = uSnap.data()?.consorcios || []
+      const lista = []
+      for (const id of ids) {
+        try {
+          const cSnap = await getDoc(doc(db, 'consorcios', id))
+          if (!cSnap.exists()) continue
+          const mSnap = await getDoc(doc(db, 'consorcios', id, 'membros', user.uid))
+          lista.push({ id, ...cSnap.data(), membro: mSnap.exists() ? mSnap.data() : {} })
+        } catch { continue }
+      }
+      setConsorcios(lista)
+      setLoading(false)
+      if (lista.length === 1) onEntrar(lista[0].id)
+    } catch {
+      setLoading(false)
     }
-    setConsorcios(lista)
-    setLoading(false)
-
-    // Auto-redireciona se tiver só 1
-    if (lista.length === 1) onEntrar(lista[0].id)
   }
 
   if (loading) return (

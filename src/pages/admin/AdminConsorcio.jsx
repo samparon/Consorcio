@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { signOut } from 'firebase/auth'
 import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth'
-import { doc, setDoc, collection, getDocs, updateDoc, getDoc, arrayUnion } from 'firebase/firestore'
+import { doc, setDoc, deleteDoc, collection, getDocs, updateDoc, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { initializeApp } from 'firebase/app'
 import { auth, db } from '../../firebase'
-import { LogOut, UserPlus, CheckCircle, Circle, ArrowLeft, Users, DollarSign, Calendar } from 'lucide-react'
+import { LogOut, UserPlus, CheckCircle, Circle, ArrowLeft, Users, DollarSign, Calendar, Trash2 } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -20,6 +20,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
   const [emailExistente, setEmailExistente] = useState('')
   const [adicionando, setAdicionando] = useState(false)
   const [msgExistente, setMsgExistente] = useState('')
+  const [removendo, setRemovendo] = useState(null)
 
   useEffect(() => { carregar() }, [consorcioId])
 
@@ -106,6 +107,20 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
       setMsgExistente('❌ Erro: ' + err.message)
     } finally {
       setAdicionando(false)
+    }
+  }
+
+  async function removerParticipante(uid) {
+    if (!window.confirm('Remover este participante do consórcio?')) return
+    setRemovendo(uid)
+    try {
+      await deleteDoc(doc(db, 'consorcios', consorcioId, 'membros', uid))
+      await updateDoc(doc(db, 'usuarios', uid), { consorcios: arrayRemove(consorcioId) })
+      await carregar()
+    } catch (err) {
+      alert('Erro ao remover: ' + err.message)
+    } finally {
+      setRemovendo(null)
     }
   }
 
@@ -206,9 +221,22 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                         <p style={{ fontSize: 18, fontWeight: 800, color: '#111827', margin: 0 }}>{idx + 1}º — {m.perfil?.nome}</p>
                         <p style={{ fontSize: 14, color: '#6b7280', marginTop: 2 }}>{m.perfil?.email}</p>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <p style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', margin: 0 }}>{m.cotas || 0} cota{m.cotas !== 1 ? 's' : ''}</p>
-                        <p style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{fmt((m.cotas || 0) * valorCota)}/mês</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <p style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', margin: 0 }}>{m.cotas || 0} cota{m.cotas !== 1 ? 's' : ''}</p>
+                          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{fmt((m.cotas || 0) * valorCota)}/mês</p>
+                        </div>
+                        <button
+                          onClick={() => removerParticipante(m.id)}
+                          disabled={removendo === m.id}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            background: '#fef2f2', color: '#dc2626', border: '2px solid #fecaca',
+                            borderRadius: 10, padding: '8px 14px', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                            opacity: removendo === m.id ? 0.5 : 1,
+                          }}>
+                          <Trash2 size={15} /> {removendo === m.id ? 'Removendo...' : 'Remover'}
+                        </button>
                       </div>
                     </div>
                     {m.cotas > 0 ? (
