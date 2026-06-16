@@ -3,7 +3,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { doc, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 
-const DOMAIN = '@consorcio.app'
+const toEmail = v => { const t = v.trim(); return t.includes('@') ? t : t.toLowerCase() + '@consorcio.app' }
 
 export default function Setup() {
   const [login, setLogin] = useState('')
@@ -15,12 +15,13 @@ export default function Setup() {
     e.preventDefault()
     setMsg('')
     try {
-      const cred = await createUserWithEmailAndPassword(auth, login.trim().toLowerCase() + DOMAIN, senha)
+      const emailFinal = toEmail(login)
+      const cred = await createUserWithEmailAndPassword(auth, emailFinal, senha)
       await setDoc(doc(db, 'usuarios', cred.user.uid), {
-        nome: login.trim(), login: login.trim().toLowerCase(), role: 'admin', criadoEm: Date.now(),
+        nome: login.trim(), login: login.trim(), role: 'admin', criadoEm: Date.now(),
       })
       setFeito(true)
-      setMsg(`✅ Admin criado! Login: ${login.trim().toLowerCase()} — agora acesse a página normal e entre.`)
+      setMsg(`✅ Admin criado! Use "${login.trim()}" para entrar.`)
     } catch (err) {
       setMsg('❌ Erro: ' + err.message)
     }
@@ -35,7 +36,7 @@ export default function Setup() {
           <form onSubmit={criar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 6 }}>Login do admin</label>
-              <input type="text" value={login} onChange={e => setLogin(e.target.value.split('@')[0])} required autoCapitalize="none" placeholder="Ex: gui (só o nome, sem @)"
+              <input type="text" value={login} onChange={e => setLogin(e.target.value)} required autoCapitalize="none" placeholder="E-mail ou login simples (ex: gui)"
                 style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div>

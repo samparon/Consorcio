@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../firebase'
 
-const DOMAIN = '@consorcio.app'
-const toEmail = login => login.trim().toLowerCase() + DOMAIN
+const toEmail = login => {
+  const v = login.trim()
+  return v.includes('@') ? v : v.toLowerCase() + '@consorcio.app'
+}
 
 export default function Login() {
   const [login, setLogin] = useState('')
@@ -31,7 +33,7 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 56, marginBottom: 12 }}>💰</div>
           <h1 style={{ fontSize: 36, fontWeight: 900, color: '#111827', margin: 0 }}>Consórcio Digital</h1>
-          <p style={{ fontSize: 16, color: '#6b7280', marginTop: 8 }}>Entre com seu login para continuar</p>
+          <p style={{ fontSize: 16, color: '#6b7280', marginTop: 8 }}>Entre com sua conta para continuar</p>
         </div>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -42,7 +44,7 @@ export default function Login() {
               value={login}
               onChange={e => setLogin(e.target.value)}
               required
-              placeholder="Ex: mario"
+              placeholder="Login ou e-mail"
               autoCapitalize="none"
               style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 14, padding: '15px 18px', fontSize: 17, outline: 'none', color: '#111827', boxSizing: 'border-box' }}
             />
