@@ -35,7 +35,7 @@ export default function Setup() {
           <form onSubmit={criar} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: 14, fontWeight: 700, color: '#374151', marginBottom: 6 }}>Login do admin</label>
-              <input type="text" value={login} onChange={e => setLogin(e.target.value)} required autoCapitalize="none" placeholder="Ex: gui"
+              <input type="text" value={login} onChange={e => setLogin(e.target.value.split('@')[0])} required autoCapitalize="none" placeholder="Ex: gui (só o nome, sem @)"
                 style={{ width: '100%', border: '2px solid #e5e7eb', borderRadius: 10, padding: '12px 14px', fontSize: 15, outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div>
