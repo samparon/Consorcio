@@ -27,6 +27,8 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
   const [cotasExistente, setCotasExistente] = useState('1')
   const [sorteando, setSorteando] = useState(false)
   const [resultadoSorteio, setResultadoSorteio] = useState(null)
+  const [dataInicioInput, setDataInicioInput] = useState('')
+  const [salvandoData, setSalvandoData] = useState(false)
 
   useEffect(() => { carregar() }, [consorcioId])
 
@@ -43,6 +45,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
     }
     lista.sort((a, b) => (a.entradaEm || 0) - (b.entradaEm || 0))
     setMembros(lista)
+    setDataInicioInput(cSnap.data().dataInicio || '')
 
     // Atualiza totalCotasPlano automaticamente
     const totalCalculado = lista.reduce((acc, m) => acc + (Number(m.cotas) || 0), 0)
@@ -50,6 +53,21 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
       await updateDoc(doc(db, 'consorcios', consorcioId), { totalCotasPlano: totalCalculado })
       setConsorcio(prev => ({ ...prev, totalCotasPlano: totalCalculado }))
     }
+  }
+
+  async function salvarDataInicio() {
+    setSalvandoData(true)
+    await updateDoc(doc(db, 'consorcios', consorcioId), { dataInicio: dataInicioInput })
+    setConsorcio(prev => ({ ...prev, dataInicio: dataInicioInput }))
+    setSalvandoData(false)
+  }
+
+  function calcData(mes) {
+    const di = consorcio?.dataInicio
+    if (!di) return `mês ${mes}`
+    const [ano, m, dia] = di.split('-').map(Number)
+    const d = new Date(ano, m - 1 + (mes - 1), dia)
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
   }
 
   function toggleMes(mes, lista, setLista, maxCotas) {
@@ -237,7 +255,18 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
         {/* Calendário */}
         {aba === 'visao' && (
           <div style={{ background: 'white', borderRadius: 20, padding: 32, boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 24 }}>Calendário — {consorcio.nome}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: 0 }}>Calendário — {consorcio.nome}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 600 }}>Início:</span>
+                <input type="date" value={dataInicioInput} onChange={e => setDataInicioInput(e.target.value)}
+                  style={{ border: '2px solid #e5e7eb', borderRadius: 10, padding: '7px 12px', fontSize: 14, outline: 'none', color: '#111827' }} />
+                <button onClick={salvarDataInicio} disabled={salvandoData} style={{
+                  background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 10,
+                  padding: '8px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: salvandoData ? 0.6 : 1,
+                }}>{salvandoData ? 'Salvando...' : 'Salvar'}</button>
+              </div>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {Array.from({ length: totalCotasPlano }, (_, i) => i + 1).map(mes => {
                 const dono = membros.find(m => m.mesesEscolhidos?.includes(mes))
@@ -311,7 +340,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                                 border: `2px solid ${pago ? '#16a34a' : '#e5e7eb'}`,
                                 background: pago ? '#f0fdf4' : '#f9fafb', color: pago ? '#16a34a' : '#374151',
                               }}>
-                                {pago ? <CheckCircle size={15} /> : <Circle size={15} />} {mes}/{totalCotasPlano}
+                                {pago ? <CheckCircle size={15} /> : <Circle size={15} />} {calcData(mes)}
                               </button>
                             )
                           })}
@@ -407,7 +436,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                           <p style={{ fontSize: 17, fontWeight: 800, color: '#111827', margin: 0 }}>{item.nome}</p>
                         </div>
                         <span style={{ fontSize: 15, fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '6px 14px', borderRadius: 10 }}>
-                          recebe dia 15 do mês {item.mes}
+                          recebe em {calcData(item.mes)}
                         </span>
                       </div>
                     ))

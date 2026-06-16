@@ -7,6 +7,13 @@ import { LogOut, CheckCircle, Clock, BadgeCheck, ArrowLeft, Copy, Check, User, K
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+function calcData(mes, dataInicio) {
+  if (!dataInicio) return `mês ${mes}`
+  const [ano, m, dia] = dataInicio.split('-').map(Number)
+  const d = new Date(ano, m - 1 + (mes - 1), dia)
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+}
+
 export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
   const { user, perfil } = useAuth()
   const [consorcio, setConsorcio] = useState(null)
@@ -150,7 +157,7 @@ export default function ParticipanteConsorcio({ consorcioId, onVoltar }) {
                     <div key={mes} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 14, padding: '18px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <CheckCircle size={22} color="#16a34a" />
-                        <span style={{ fontSize: 18, fontWeight: 800, color: '#15803d' }}>Mês {mes} — sorteado</span>
+                        <span style={{ fontSize: 18, fontWeight: 800, color: '#15803d' }}>Recebe em {calcData(mes, consorcio.dataInicio)}</span>
                       </div>
                       <span style={{ fontSize: 20, fontWeight: 800, color: '#15803d' }}>{fmt(potMensal)}</span>
                     </div>
