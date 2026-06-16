@@ -25,6 +25,8 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
   const [mesesNovo, setMesesNovo] = useState([])
   const [cotasExistente, setCotasExistente] = useState('1')
   const [mesesExistente, setMesesExistente] = useState([])
+  const [sorteando, setSorteando] = useState(false)
+  const [resultadoSorteio, setResultadoSorteio] = useState(null)
 
   useEffect(() => { carregar() }, [consorcioId])
 
@@ -116,6 +118,42 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
     }
   }
 
+  async function realizarSorteio() {
+    const participantes = membros.filter(m => m.cotas > 0)
+    if (participantes.length === 0) { alert('Nenhum participante com cotas cadastradas.'); return }
+
+    const totalCotas = participantes.reduce((acc, m) => acc + m.cotas, 0)
+    if (totalCotas > totalCotasPlano) { alert(`Total de cotas (${totalCotas}) ultrapassa o plano (${totalCotasPlano}).`); return }
+
+    if (!window.confirm(`Sortear meses para ${participantes.length} participante(s)? Isso vai substituir os meses atuais.`)) return
+
+    setSorteando(true)
+    try {
+      // Embaralha os meses disponíveis (Fisher-Yates)
+      const meses = Array.from({ length: totalCotasPlano }, (_, i) => i + 1)
+      for (let i = meses.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [meses[i], meses[j]] = [meses[j], meses[i]]
+      }
+
+      // Distribui os meses na ordem dos participantes
+      const resultado = []
+      let idx = 0
+      for (const m of participantes) {
+        const mesesDoMembro = meses.slice(idx, idx + m.cotas).sort((a, b) => a - b)
+        idx += m.cotas
+        await updateDoc(doc(db, 'consorcios', consorcioId, 'membros', m.id), { mesesEscolhidos: mesesDoMembro })
+        resultado.push({ nome: m.perfil?.nome, cotas: m.cotas, meses: mesesDoMembro })
+      }
+      setResultadoSorteio(resultado)
+      await carregar()
+    } catch (err) {
+      alert('Erro no sorteio: ' + err.message)
+    } finally {
+      setSorteando(false)
+    }
+  }
+
   async function removerParticipante(uid) {
     if (!window.confirm('Remover este participante do consórcio?')) return
     setRemovendo(uid)
@@ -181,7 +219,7 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
 
         {/* Abas */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-          {[['visao', 'Calendário'], ['membros', 'Participantes'], ['novo', 'Novo participante']].map(([id, label]) => (
+          {[['visao', 'Calendário'], ['membros', 'Participantes'], ['sorteio', '🎲 Sorteio'], ['novo', 'Novo participante']].map(([id, label]) => (
             <button key={id} onClick={() => setAba(id)} style={{
               padding: '11px 22px', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', border: 'none',
               background: aba === id ? '#1d4ed8' : 'white', color: aba === id ? 'white' : '#374151',
@@ -278,6 +316,88 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sorteio */}
+        {aba === 'sorteio' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+            {/* Card de info */}
+            <div style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)', borderRadius: 24, padding: '32px 36px', boxShadow: '0 8px 24px rgba(124,58,237,0.3)' }}>
+              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 8px', fontWeight: 600, letterSpacing: 1 }}>SORTEIO AUTOMÁTICO</p>
+              <p style={{ fontSize: 28, fontWeight: 900, color: 'white', margin: '0 0 8px' }}>🎲 Distribuir meses aleatoriamente</p>
+              <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', margin: 0 }}>
+                Os {totalCotasPlano} meses são embaralhados e distribuídos conforme o número de cotas de cada participante.
+              </p>
+            </div>
+
+            {/* Resumo dos participantes */}
+            <div style={{ background: 'white', borderRadius: 24, padding: '32px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 20 }}>Participantes no sorteio</h2>
+              {membros.filter(m => m.cotas > 0).length === 0 ? (
+                <p style={{ color: '#9ca3af', fontSize: 16 }}>Nenhum participante com cotas cadastradas ainda.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
+                  {membros.filter(m => m.cotas > 0).map((m, i) => (
+                    <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 18px', background: '#f8fafc', borderRadius: 14, border: '1px solid #e5e7eb' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed, #a855f7)', color: 'white', fontWeight: 800, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</div>
+                        <div>
+                          <p style={{ fontSize: 16, fontWeight: 800, color: '#111827', margin: 0 }}>{m.perfil?.nome}</p>
+                          <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>{m.cotas} cota{m.cotas !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        {m.mesesEscolhidos?.length > 0 ? (
+                          <span style={{ fontSize: 14, fontWeight: 700, color: '#16a34a', background: '#f0fdf4', padding: '4px 12px', borderRadius: 8 }}>
+                            Meses: {m.mesesEscolhidos.sort((a,b)=>a-b).join(', ')}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 13, color: '#f59e0b', background: '#fffbeb', padding: '4px 12px', borderRadius: 8 }}>Aguardando sorteio</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 18px', background: '#eff6ff', borderRadius: 12 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: '#1d4ed8' }}>Total de cotas distribuídas</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: '#1d4ed8' }}>
+                      {membros.filter(m => m.cotas > 0).reduce((acc, m) => acc + m.cotas, 0)} / {totalCotasPlano}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={realizarSorteio}
+                disabled={sorteando || membros.filter(m => m.cotas > 0).length === 0}
+                style={{
+                  width: '100%', padding: '18px', fontSize: 18, fontWeight: 900, border: 'none', borderRadius: 16, cursor: 'pointer',
+                  background: sorteando ? '#e5e7eb' : 'linear-gradient(135deg, #7c3aed, #a855f7)',
+                  color: sorteando ? '#9ca3af' : 'white',
+                  boxShadow: sorteando ? 'none' : '0 6px 20px rgba(124,58,237,0.4)',
+                }}>
+                {sorteando ? '🎲 Sorteando...' : '🎲 Realizar Sorteio'}
+              </button>
+            </div>
+
+            {/* Resultado do sorteio */}
+            {resultadoSorteio && (
+              <div style={{ background: 'white', borderRadius: 24, padding: '32px', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: 20 }}>🎉 Resultado do Sorteio</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {resultadoSorteio.map((r, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: '#f0fdf4', border: '2px solid #bbf7d0', borderRadius: 14 }}>
+                      <div>
+                        <p style={{ fontSize: 17, fontWeight: 800, color: '#111827', margin: 0 }}>{r.nome}</p>
+                        <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>{r.cotas} cota{r.cotas !== 1 ? 's' : ''}</p>
+                      </div>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: '#16a34a' }}>Mês{r.meses.length > 1 ? 'es' : ''}: {r.meses.join(', ')}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
