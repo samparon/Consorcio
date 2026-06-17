@@ -4,7 +4,7 @@ import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth'
 import { doc, setDoc, deleteDoc, collection, getDocs, updateDoc, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { initializeApp } from 'firebase/app'
 import { auth, db } from '../../firebase'
-import { LogOut, UserPlus, CheckCircle, Circle, ArrowLeft, Users, DollarSign, Calendar, Trash2 } from 'lucide-react'
+import { LogOut, UserPlus, CheckCircle, Circle, ArrowLeft, Users, DollarSign, Calendar, Trash2, Pencil, X } from 'lucide-react'
 
 const fmt = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const DOMAIN = '@consorcio.app'
@@ -29,6 +29,8 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
   const [resultadoSorteio, setResultadoSorteio] = useState(null)
   const [dataInicioInput, setDataInicioInput] = useState('')
   const [salvandoData, setSalvandoData] = useState(false)
+  const [editandoCotas, setEditandoCotas] = useState(null)
+  const [cotasEdit, setCotasEdit] = useState('')
 
   useEffect(() => { carregar() }, [consorcioId])
 
@@ -53,6 +55,14 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
       await updateDoc(doc(db, 'consorcios', consorcioId), { totalCotasPlano: totalCalculado })
       setConsorcio(prev => ({ ...prev, totalCotasPlano: totalCalculado }))
     }
+  }
+
+  async function salvarCotas(uid) {
+    const novasCotas = Number(cotasEdit)
+    if (!novasCotas || novasCotas < 1) return
+    await updateDoc(doc(db, 'consorcios', consorcioId, 'membros', uid), { cotas: novasCotas, mesesEscolhidos: [] })
+    setEditandoCotas(null)
+    await carregar()
   }
 
   async function salvarDataInicio() {
@@ -311,8 +321,26 @@ export default function AdminConsorcio({ consorcioId, onVoltar }) {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                         <div style={{ textAlign: 'right' }}>
-                          <p style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', margin: 0 }}>{m.cotas || 0} cota{m.cotas !== 1 ? 's' : ''}</p>
-                          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{fmt((m.cotas || 0) * valorCota)}/mês</p>
+                          {editandoCotas === m.id ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <input type="number" min="1" value={cotasEdit} onChange={e => setCotasEdit(e.target.value)}
+                                style={{ width: 60, border: '2px solid #1d4ed8', borderRadius: 8, padding: '6px 10px', fontSize: 16, fontWeight: 800, color: '#1d4ed8', outline: 'none', textAlign: 'center' }}
+                                autoFocus onKeyDown={e => { if (e.key === 'Enter') salvarCotas(m.id); if (e.key === 'Escape') setEditandoCotas(null) }} />
+                              <button onClick={() => salvarCotas(m.id)} style={{ background: '#1d4ed8', color: 'white', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>OK</button>
+                              <button onClick={() => setEditandoCotas(null)} style={{ background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer' }}><X size={14} /></button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div>
+                                <p style={{ fontSize: 18, fontWeight: 800, color: '#1d4ed8', margin: 0 }}>{m.cotas || 0} cota{m.cotas !== 1 ? 's' : ''}</p>
+                                <p style={{ fontSize: 13, color: '#6b7280', marginTop: 2 }}>{fmt((m.cotas || 0) * valorCota)}/mês</p>
+                              </div>
+                              <button onClick={() => { setEditandoCotas(m.id); setCotasEdit(String(m.cotas || 1)) }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 4 }} title="Editar cotas">
+                                <Pencil size={15} />
+                              </button>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => removerParticipante(m.id)}
